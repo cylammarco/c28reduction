@@ -509,7 +509,7 @@ for folder_i in folder_name:
                                     unit=units.count,
                                 ),
                                 CCDData(
-                                    flat_master_nightly_data,
+                                    flat_master_nightly_data_combined,
                                     header=fits_data.header,
                                     unit=units.count,
                                 ),
@@ -620,7 +620,7 @@ for folder_i in folder_name:
                                     unit=units.count,
                                 ),
                                 CCDData(
-                                    flat_master_nightly_data,
+                                    flat_master_nightly_data_combined,
                                     header=fits_data.header,
                                     unit=units.count,
                                 ),
