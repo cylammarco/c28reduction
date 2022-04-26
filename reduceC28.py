@@ -64,6 +64,11 @@ parser.add_argument(
     action="store_true",
     help="(re)build the total stack in all filters.",
 )
+parser.add_argument(
+    "--build-total-stack-only",
+    action="store_true",
+    help="(re)build the total stack in all filters only.",
+)
 parser.add_argument("--folder")
 args = parser.parse_args()
 
@@ -74,7 +79,7 @@ folder_name = args.folder
 
 if folder_name is None:
 
-    folder_name = glob.glob(f"./*c28/")
+    folder_name = [i.split(os.sep)[1] for i in glob.glob(f"./*c28/")]
 
 else:
 
@@ -198,6 +203,7 @@ for folder_i in folder_name:
         or args.flat_frame_only
         or args.wcs_fit_only
         or args.flatfielding_only
+        or args.build_total_stack_only
     ):
 
         # Create or add to the master_bias
@@ -297,6 +303,7 @@ for folder_i in folder_name:
         or args.flat_frame_only
         or args.wcs_fit_only
         or args.flatfielding_only
+        or args.build_total_stack_only
     ):
 
         if os.path.exists(bias_master):
@@ -407,6 +414,7 @@ for folder_i in folder_name:
         or args.dark_frame_only
         or args.flatfielding_only
         or args.wcs_fit_only
+        or args.build_total_stack_only
     ):
 
         if os.path.exists(bias_master):
@@ -649,6 +657,7 @@ for folder_i in folder_name:
         or args.dark_frame_only
         or args.bias_frame_only
         or args.wcs_fit_only
+        or args.build_total_stack_only
     ):
 
         if os.path.exists(bias_master):
@@ -732,6 +741,7 @@ for folder_i in folder_name:
         or args.dark_frame_only
         or args.bias_frame_only
         or args.flatfielding_only
+        or args.build_total_stack_only
     ):
 
         # Do WCS fit on all of the light frames
@@ -742,7 +752,7 @@ for folder_i in folder_name:
             os.path.splitext(i)[0] + ".new" for i in reduced_light_filename_list
         ]
 
-    if args.build_total_stack:
+    if (args.build_total_stack) or (args.build_total_stack_only):
 
         # Get all the light frames in different bands
         filelist_light_reduced_B = []
@@ -760,169 +770,178 @@ for folder_i in folder_name:
         R_exp_time_list = []
         Ha_exp_time_list = []
 
-        for folder_i in folder_name:
+        # Get all the files
+        filelist_all = os.listdir(folder_i)
 
-            # Get all the files
-            filelist_all = os.listdir(folder_i)
+        for filename in filelist_all:
 
-            for filename in filelist_all:
+            if filename.endswith("new"):
 
-                if filename.endswith("new"):
+                _filter = os.path.splitext(filename)[0].split("-")[-2]
+                if _filter.upper() == "B":
+                    filelist_light_reduced_B.append(filename)
+                elif _filter.upper() == "V":
+                    filelist_light_reduced_V.append(filename)
+                elif _filter.upper() == "R":
+                    filelist_light_reduced_R.append(filename)
+                elif _filter.upper() == "HA":
+                    filelist_light_reduced_Ha.append(filename)
+                else:
+                    print("Unaccounted filters: {}".format(_name))
+                    print("It is not handled.")
 
-                    _filter = os.path.splitext(filename)[0].split("-")[-2]
-                    if _filter.upper() == "B":
-                        filelist_light_reduced_B.append(filename)
-                    elif _filter.upper() == "V":
-                        filelist_light_reduced_V.append(filename)
-                    elif _filter.upper() == "R":
-                        filelist_light_reduced_R.append(filename)
-                    elif _filter.upper() == "HA":
-                        filelist_light_reduced_Ha.append(filename)
-                    else:
-                        print("Unaccounted filters: {}".format(_name))
-                        print("It is not handled.")
+        filelist_light_reduced_all = (
+            filelist_light_reduced_B
+            + filelist_light_reduced_V
+            + filelist_light_reduced_R
+            + filelist_light_reduced_Ha
+        )
 
-            filelist_light_reduced_all = (
-                filelist_light_reduced_B
-                + filelist_light_reduced_V
-                + filelist_light_reduced_R
-                + filelist_light_reduced_Ha
+        if len(filelist_light_reduced_all) == 0:
+
+            print(
+                "No WCS fitted frames with extension .new found in {}.".format(folder_i)
             )
+            continue
 
-            wcs_reference = WCS(fits.open(filelist_light_reduced_all[0])[0].header)
+        else:
 
-            # B band
-            for filename in filelist_light_reduced_B:
+            print("{} frames found.".format(len(filelist_light_reduced_all)))
 
-                fits_file = fits.open(filename)
-                wcs = WCS(fits_file[0].header)
-                fits_data_reprojected = reproject_exact(
-                    input_data=fits_file,
-                    output_projection=wcs_reference,
-                    return_footprint=False,
-                )
-                B_combiner_list.append(
-                    CCDData(
-                        fits_data_reprojected,
-                        header=fits_file[0].header,
-                        wcs=wcs_reference,
-                        unit=units.count,
-                    )
-                )
-                B_exp_time_list.append(fits_file[0].header["EXPTIME"])
+        wcs_reference = WCS(fits.open(filelist_light_reduced_all[0])[0].header)
 
-            B_combiner = Combiner(B_combiner_list, dtype=np.float64)
-            B_combiner.weights = np.array(B_exp_time_list)
-            B_combiner.sigma_clipping()
-            B_combined_data = B_combiner.average_combine()
+        # B band
+        for filename in filelist_light_reduced_B:
 
-            B_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
-            for i, filename in enumerate(filelist_light_reduced_B):
-                B_combined_fits.header["FRAME_" + str(i)] = filename
-            B_combined_fits.header.update(wcs_reference.to_header)
-            B_combined_fits.writeto(
-                os.path.join(folder_i, "B_total_stack.fits".format(folder_i)),
-                overwrite=True,
+            fits_file = fits.open(filename)
+            wcs = WCS(fits_file[0].header)
+            fits_data_reprojected = reproject_exact(
+                input_data=fits_file,
+                output_projection=wcs_reference,
+                return_footprint=False,
             )
-
-            # V band
-            for filename in filelist_light_reduced_V:
-
-                fits_file = fits.open(filename)
-                wcs = WCS(fits_file[0].header)
-                fits_data_reprojected = reproject_exact(
-                    input_data=fits_file,
-                    output_projection=wcs_reference,
-                    return_footprint=False,
+            B_combiner_list.append(
+                CCDData(
+                    fits_data_reprojected,
+                    header=fits_file[0].header,
+                    wcs=wcs_reference,
+                    unit=units.count,
                 )
-                V_combiner_list.append(
-                    CCDData(
-                        fits_data_reprojected,
-                        header=fits_file[0].header,
-                        wcs=wcs_reference,
-                        unit=units.count,
-                    )
-                )
-                V_exp_time_list.append(fits_file[0].header["EXPTIME"])
-
-            V_combiner = Combiner(V_combiner_list, dtype=np.float64)
-            V_combiner.weights = np.array(V_exp_time_list)
-            V_combiner.sigma_clipping()
-            V_combined_data = V_combiner.average_combine()
-
-            V_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
-            for i, filename in enumerate(filelist_light_reduced_V):
-                V_combined_fits.header["FRAME_" + str(i)] = filename
-            V_combined_fits.header.update(wcs_reference.to_header)
-            V_combined_fits.writeto(
-                os.path.join(folder_i, "V_total_stack.fits".format(folder_i)),
-                overwrite=True,
             )
+            B_exp_time_list.append(fits_file[0].header["EXPTIME"])
 
-            # R band
-            for filename in filelist_light_reduced_R:
+        B_combiner = Combiner(B_combiner_list, dtype=np.float64)
+        B_combiner.weights = np.array(B_exp_time_list)
+        B_combiner.sigma_clipping()
+        B_combined_data = B_combiner.average_combine()
 
-                fits_file = fits.open(filename)
-                wcs = WCS(fits_file[0].header)
-                fits_data_reprojected = reproject_exact(
-                    input_data=fits_file,
-                    output_projection=wcs_reference,
-                    return_footprint=False,
-                )
-                R_combiner_list.append(
-                    CCDData(
-                        fits_data_reprojected,
-                        header=fits_file[0].header,
-                        wcs=wcs_reference,
-                        unit=units.count,
-                    )
-                )
-                R_exp_time_list.append(fits_file[0].header["EXPTIME"])
+        B_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
+        for i, filename in enumerate(filelist_light_reduced_B):
+            B_combined_fits.header["FRAME_" + str(i)] = filename
+        B_combined_fits.header.update(wcs_reference.to_header)
+        B_combined_fits.writeto(
+            os.path.join(folder_i, "B_total_stack.fits".format(folder_i)),
+            overwrite=True,
+        )
 
-            R_combiner = Combiner(R_combiner_list, dtype=np.float64)
-            R_combiner.weights = np.array(R_exp_time_list)
-            R_combiner.sigma_clipping()
-            R_combined_data = R_combiner.average_combine()
+        # V band
+        for filename in filelist_light_reduced_V:
 
-            B_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
-            for i, filename in enumerate(filelist_light_reduced_R):
-                R_combined_fits.header["FRAME_" + str(i)] = filename
-            R_combined_fits.header.update(wcs_reference.to_header)
-            R_combined_fits.writeto(
-                os.path.join(folder_i, "R_total_stack.fits".format(folder_i)),
-                overwrite=True,
+            fits_file = fits.open(filename)
+            wcs = WCS(fits_file[0].header)
+            fits_data_reprojected = reproject_exact(
+                input_data=fits_file,
+                output_projection=wcs_reference,
+                return_footprint=False,
             )
-
-            # Ha band
-            for filename in filelist_light_reduced_Ha:
-
-                fits_file = fits.open(filename)
-                wcs = WCS(fits_file[0].header)
-                fits_data_reprojected = reproject_exact(
-                    input_data=fits_file,
-                    output_projection=wcs_reference,
-                    return_footprint=False,
+            V_combiner_list.append(
+                CCDData(
+                    fits_data_reprojected,
+                    header=fits_file[0].header,
+                    wcs=wcs_reference,
+                    unit=units.count,
                 )
-                Ha_combiner_list.append(
-                    CCDData(
-                        fits_data_reprojected,
-                        header=fits_file[0].header,
-                        wcs=wcs_reference,
-                        unit=units.count,
-                    )
-                )
-                Ha_exp_time_list.append(fits_file[0].header["EXPTIME"])
-
-            Ha_combiner = Combiner(Ha_combiner_list, dtype=np.float64)
-            Ha_combiner.weights = np.array(Ha_exp_time_list)
-            Ha_combiner.sigma_clipping()
-            Ha_combined_data = Ha_combiner.average_combine()
-
-            Ha_combined_fits = fits.PrimaryHDU(Ha_combined_data, fits.Header())
-            for i, filename in enumerate(filelist_light_reduced_Ha):
-                Ha_combined_fits.header["FRAME_" + str(i)] = filename
-            Ha_combined_fits.header.update(wcs_reference.to_header)
-            Ha_combined_fits.writeto(
-                os.path.join(folder_i, "Ha_total_stack.fits".format(folder_i)),
-                overwrite=True,
             )
+            V_exp_time_list.append(fits_file[0].header["EXPTIME"])
+
+        V_combiner = Combiner(V_combiner_list, dtype=np.float64)
+        V_combiner.weights = np.array(V_exp_time_list)
+        V_combiner.sigma_clipping()
+        V_combined_data = V_combiner.average_combine()
+
+        V_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
+        for i, filename in enumerate(filelist_light_reduced_V):
+            V_combined_fits.header["FRAME_" + str(i)] = filename
+        V_combined_fits.header.update(wcs_reference.to_header)
+        V_combined_fits.writeto(
+            os.path.join(folder_i, "V_total_stack.fits".format(folder_i)),
+            overwrite=True,
+        )
+
+        # R band
+        for filename in filelist_light_reduced_R:
+
+            fits_file = fits.open(filename)
+            wcs = WCS(fits_file[0].header)
+            fits_data_reprojected = reproject_exact(
+                input_data=fits_file,
+                output_projection=wcs_reference,
+                return_footprint=False,
+            )
+            R_combiner_list.append(
+                CCDData(
+                    fits_data_reprojected,
+                    header=fits_file[0].header,
+                    wcs=wcs_reference,
+                    unit=units.count,
+                )
+            )
+            R_exp_time_list.append(fits_file[0].header["EXPTIME"])
+
+        R_combiner = Combiner(R_combiner_list, dtype=np.float64)
+        R_combiner.weights = np.array(R_exp_time_list)
+        R_combiner.sigma_clipping()
+        R_combined_data = R_combiner.average_combine()
+
+        B_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
+        for i, filename in enumerate(filelist_light_reduced_R):
+            R_combined_fits.header["FRAME_" + str(i)] = filename
+        R_combined_fits.header.update(wcs_reference.to_header)
+        R_combined_fits.writeto(
+            os.path.join(folder_i, "R_total_stack.fits".format(folder_i)),
+            overwrite=True,
+        )
+
+        # Ha band
+        for filename in filelist_light_reduced_Ha:
+
+            fits_file = fits.open(filename)
+            wcs = WCS(fits_file[0].header)
+            fits_data_reprojected = reproject_exact(
+                input_data=fits_file,
+                output_projection=wcs_reference,
+                return_footprint=False,
+            )
+            Ha_combiner_list.append(
+                CCDData(
+                    fits_data_reprojected,
+                    header=fits_file[0].header,
+                    wcs=wcs_reference,
+                    unit=units.count,
+                )
+            )
+            Ha_exp_time_list.append(fits_file[0].header["EXPTIME"])
+
+        Ha_combiner = Combiner(Ha_combiner_list, dtype=np.float64)
+        Ha_combiner.weights = np.array(Ha_exp_time_list)
+        Ha_combiner.sigma_clipping()
+        Ha_combined_data = Ha_combiner.average_combine()
+
+        Ha_combined_fits = fits.PrimaryHDU(Ha_combined_data, fits.Header())
+        for i, filename in enumerate(filelist_light_reduced_Ha):
+            Ha_combined_fits.header["FRAME_" + str(i)] = filename
+        Ha_combined_fits.header.update(wcs_reference.to_header)
+        Ha_combined_fits.writeto(
+            os.path.join(folder_i, "Ha_total_stack.fits".format(folder_i)),
+            overwrite=True,
+        )
