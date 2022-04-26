@@ -19,7 +19,7 @@ from reproject import reproject_exact
 def wcs_fit(filelist):
     for filename in filelist:
         # WCS fit
-        filepath = os.path.join("reduced_image", filename)
+        filepath = os.path.join(filename)
         subprocess.call(
             "solve-field {} --ra 19:21:43.6 --dec -15:57:18 --radius 1 --cpulimit 30000".format(
                 filepath
