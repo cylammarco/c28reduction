@@ -593,12 +593,15 @@ for folder_i in folder_name:
                     )
                     flat_master_nightly_data.minmax_clipping(max_clip=65000)
                     flat_master_nightly_data.sigma_clipping()
-                    flat_master_nightly_data = (
+                    flat_master_nightly_data_combined = (
                         flat_master_nightly_data.average_combine()
                     )
-                    flat_master_nightly_data /= np.nanmean(flat_master_nightly_data)
+                    flat_master_nightly_data_combined.data = (
+                        flat_master_nightly_data_combined.data
+                        / np.nanmean(flat_master_nightly_data_combined.data)
+                    )
                     flat_master_nightly_fits = fits.PrimaryHDU(
-                        flat_master_nightly_data,
+                        flat_master_nightly_data_combined,
                         fits.Header(),
                     )
                     for i, filename in enumerate(filelist_flat_raw):
