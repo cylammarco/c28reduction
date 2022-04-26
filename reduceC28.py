@@ -487,7 +487,7 @@ for folder_i in folder_name:
                     )
                     flat_master_nightly_data_combined.data = (
                         flat_master_nightly_data_combined.data
-                        / np.nanmean(flat_master_nightly_data)
+                        / np.nanmean(flat_master_nightly_data_combined.data)
                     )
                     flat_master_nightly_fits = fits.PrimaryHDU(
                         flat_master_nightly_data_combined,
