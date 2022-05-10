@@ -37,7 +37,7 @@ def wcs_fit(filelist):
         if os.path.exists(filepath):
             pass
         else:
-            fits_to_add_wcs = fits.open(filepath)[0]
+            fits_to_add_wcs = fits.open(os.path.splitext(filepath)[0] + ".fts")[0]
             time_diff = np.abs(obs_time - obs_time[i])
             wcs_ref_filepath = filelist_wcs_fitted[
                 np.argmin(time_diff[time_diff > 0.0])
