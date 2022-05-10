@@ -33,7 +33,7 @@ def wcs_fit(filelist):
             ),
             shell=True,
         )
-        obs_time[i] = fits.open(filename)[0].header["JD"]
+        obs_time[i] = fits.open(filename, memmap=False)[0].header["JD"]
     # If WCS fit failed, apply the wcs from a frame with the least temporal difference
     # Get the filelist of all the WCS fitted light frames
     filelist_wcs_fitted = [os.path.splitext(i)[0] + ".new" for i in filelist]
@@ -41,11 +41,13 @@ def wcs_fit(filelist):
         if os.path.exists(filepath):
             pass
         else:
-            fits_to_add_wcs = fits.open(os.path.splitext(filepath)[0] + ".fts")[0]
+            fits_to_add_wcs = fits.open(
+                os.path.splitext(filepath)[0] + ".fts", memmap=False
+            )[0]
             time_diff = obs_time - obs_time[i]
             closest_idx = np.where(time_diff == closest_nonzero(time_diff, i))[0][0]
             wcs_ref_filepath = filelist_wcs_fitted[closest_idx]
-            wcs_reference = WCS(fits.open(wcs_ref_filepath)[0].header)
+            wcs_reference = WCS(fits.open(wcs_ref_filepath, memmap=False)[0].header)
             fits_to_add_wcs.header.update(wcs_reference.to_header)
             fits_to_add_wcs.writeto(
                 os.path.join(folder_i, filepath),
@@ -254,7 +256,7 @@ for folder_i in folder_name:
             for filename in filelist_bias_raw:
                 if filename not in bias_master_frame_name:
                     filepath = os.path.join(folder_i, filename)
-                    fits_data = fits.open(filepath)[0]
+                    fits_data = fits.open(filepath, memmap=False)[0]
                     bias_ccddata_list.append(
                         CCDData(
                             fits_data.data, header=fits_data.header, unit=units.count
@@ -333,7 +335,7 @@ for folder_i in folder_name:
 
         if os.path.exists(bias_master):
             # Load the bias master if exists
-            bias_master_fits = fits.open(bias_master)
+            bias_master_fits = fits.open(bias_master, memmap=False)
         else:
             raise ValueError(
                 "Bias master frame: {} does not exist.".format(bias_master)
@@ -362,7 +364,7 @@ for folder_i in folder_name:
             for filename in filelist_dark_raw:
                 if filename not in dark_master_frame_name:
                     filepath = os.path.join(folder_i, filename)
-                    fits_data = fits.open(filepath)[0]
+                    fits_data = fits.open(filepath, memmap=False)[0]
                     dark_ccddata_list.append(
                         CCDData(
                             (fits_data.data - bias_master_fits[0].data)
@@ -444,7 +446,7 @@ for folder_i in folder_name:
 
         if os.path.exists(bias_master):
             # Load the bias master if exists
-            bias_master_fits = fits.open(bias_master)
+            bias_master_fits = fits.open(bias_master, memmap=False)
         else:
             raise ValueError(
                 "Bias master frame: {} does not exist.".format(bias_master)
@@ -452,7 +454,7 @@ for folder_i in folder_name:
 
         if os.path.exists(dark_master):
             # Load the dark master if exists
-            dark_master_fits = fits.open(dark_master)
+            dark_master_fits = fits.open(dark_master, memmap=False)
         else:
             raise ValueError(
                 "Dark master frame: {} does not exist.".format(dark_master)
@@ -489,7 +491,7 @@ for folder_i in folder_name:
                     filename_temp = folder_i + "-" + filename
                     if filename_temp not in flat_master_frame_name:
                         filepath = os.path.join(folder_i, filename)
-                        fits_data = fits.open(filepath)[0]
+                        fits_data = fits.open(filepath, memmap=False)[0]
                         flat_ccddata_list.append(
                             CCDData(
                                 fits_data.data
@@ -600,7 +602,7 @@ for folder_i in folder_name:
                     filename_temp = folder_i + "-" + filename
                     if filename_temp not in flat_master_frame_name:
                         filepath = os.path.join(folder_i, filename)
-                        fits_data = fits.open(filepath)[0]
+                        fits_data = fits.open(filepath, memmap=False)[0]
                         flat_ccddata_list.append(
                             CCDData(
                                 fits_data.data
@@ -693,7 +695,7 @@ for folder_i in folder_name:
 
         if os.path.exists(bias_master):
             # Load the bias master if exists
-            bias_master_fits = fits.open(bias_master)
+            bias_master_fits = fits.open(bias_master, memmap=False)
         else:
             raise ValueError(
                 "Bias master frame: {} does not exist.".format(bias_master)
@@ -701,7 +703,7 @@ for folder_i in folder_name:
 
         if os.path.exists(dark_master):
             # Load the dark master if exists
-            dark_master_fits = fits.open(dark_master)
+            dark_master_fits = fits.open(dark_master, memmap=False)
         else:
             raise ValueError(
                 "Dark master frame: {} does not exist.".format(dark_master)
@@ -717,7 +719,7 @@ for folder_i in folder_name:
             filepath = os.path.join(folder_i, filename)
             outfile_filepath = os.path.join(folder_i, outfile_name + outfile_extension)
             # Load the light frame and exposure time
-            light_fits = fits.open(filepath)
+            light_fits = fits.open(filepath, memmap=False)
             light_fits_data = light_fits[0].data
             light_fits_header = light_fits[0].header
             exp_time = np.float64(light_fits_header["EXPTIME"])
@@ -739,12 +741,14 @@ for folder_i in folder_name:
                             exp_time
                         )
                     )
-                flat_fits = fits.open("flat_master_B.fits")
+                flat_fits = fits.open("flat_master_B.fits", memmap=False)
             else:
-                flat_fits = fits.open("flat_master_{}.fits".format(_filter))
+                flat_fits = fits.open(
+                    "flat_master_{}.fits".format(_filter), memmap=False
+                )
             if _filter.upper() != "HA":
                 shutter_flat_fits = fits.open(
-                    "shutter_flat_master_{}.fits".format(_filter)
+                    "shutter_flat_master_{}.fits".format(_filter), memmap=False
                 )
                 # Correct for the shutter shade, divide the ratio to the frame
                 shutter_ratio = flat_fits[0].data / shutter_flat_fits[0].data
@@ -887,12 +891,14 @@ for folder_i in folder_name:
 
             print("{} frames found.".format(len(filelist_light_reduced_all)))
 
-        wcs_reference = WCS(fits.open(filelist_light_reduced_all[0])[0].header)
+        wcs_reference = WCS(
+            fits.open(filelist_light_reduced_all[0], memmap=False)[0].header
+        )
 
         # B band
         for filename in filelist_light_reduced_B:
 
-            fits_file = fits.open(filename)
+            fits_file = fits.open(filename, memmap=False)
             wcs = WCS(fits_file[0].header)
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
@@ -926,7 +932,7 @@ for folder_i in folder_name:
         # V band
         for filename in filelist_light_reduced_V:
 
-            fits_file = fits.open(filename)
+            fits_file = fits.open(filename, memmap=False)
             wcs = WCS(fits_file[0].header)
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
@@ -960,7 +966,7 @@ for folder_i in folder_name:
         # R band
         for filename in filelist_light_reduced_R:
 
-            fits_file = fits.open(filename)
+            fits_file = fits.open(filename, memmap=False)
             wcs = WCS(fits_file[0].header)
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
@@ -994,7 +1000,7 @@ for folder_i in folder_name:
         # Ha band
         for filename in filelist_light_reduced_Ha:
 
-            fits_file = fits.open(filename)
+            fits_file = fits.open(filename, memmap=False)
             wcs = WCS(fits_file[0].header)
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
