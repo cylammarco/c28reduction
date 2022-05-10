@@ -817,13 +817,7 @@ for folder_i in folder_name:
 
         reduced_light_filename_list = []
         for filename in filelist_light_reduced_all:
-            # Get the filter
-            _filter = filename.split("-")[2]
-            outfile_name, outfile_extension = os.path.splitext(filename)
-            outfile_name += "-reduced"
-            # Get the file path
-            filepath = os.path.join(folder_i, filename)
-            outfile_filepath = os.path.join(folder_i, outfile_name + outfile_extension)
+            outfile_filepath = os.path.join(folder_i, filename)
             reduced_light_filename_list.append(outfile_filepath)
 
         # Do WCS fit on all of the light frames
