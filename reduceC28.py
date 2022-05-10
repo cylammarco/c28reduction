@@ -17,6 +17,7 @@ from reproject import reproject_exact
 
 
 def wcs_fit(filelist):
+    obs_time = np.zeros(len(filelist))
     for filename in filelist:
         # WCS fit
         filepath = os.path.join(filename)
@@ -26,6 +27,27 @@ def wcs_fit(filelist):
             ),
             shell=True,
         )
+        obs_time[i] = fits.open(filename)[0].header["JD"]
+    # If WCS fit failed, apply the wcs from a frame with the least temporal difference
+    # Get the filelist of all the WCS fitted light frames
+    filelist_wcs_fitted = [
+        os.path.splitext(i)[0] + ".new" for i in reduced_light_filename_list
+    ]
+    for i, filepath in enumerate(filelist_wcs_fitted):
+        if os.path.exists(filepath):
+            pass
+        else:
+            fits_to_add_wcs = fits.open(filepath)[0]
+            time_diff = np.abs(obs_time - obs_time[i])
+            wcs_ref_filepath = filelist_wcs_fitted[
+                np.argmin(time_diff[time_diff > 0.0])
+            ]
+            wcs_reference = WCS(fits.open(wcs_ref_filepath)[0].header)
+            fits_to_add_wcs.header.update(wcs_reference.to_header)
+            fits_to_add_wcs.writeto(
+                os.path.join(folder_i, filepath),
+                overwrite=True,
+            )
 
 
 parser = argparse.ArgumentParser(description="Some minimal control of data reduction.")
