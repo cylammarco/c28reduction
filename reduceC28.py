@@ -18,7 +18,7 @@ from reproject import reproject_exact
 
 def wcs_fit(filelist):
     obs_time = np.zeros(len(filelist))
-    for filename in filelist:
+    for i, filename in enumerate(filelist):
         # WCS fit
         filepath = os.path.join(filename)
         subprocess.call(
