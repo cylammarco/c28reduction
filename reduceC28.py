@@ -16,6 +16,12 @@ from ccdproc import Combiner
 from reproject import reproject_exact
 
 
+def closest_nonzero(lst, start_index):
+    nonzeros = [(i, x) for i, x in enumerate(lst) if x != 0]
+    sorted_nonzeros = sorted(nonzeros, key=lambda x: abs(x[0] - start_index))
+    return sorted_nonzeros[0][1]
+
+
 def wcs_fit(filelist):
     obs_time = np.zeros(len(filelist))
     for i, filename in enumerate(filelist):
@@ -36,9 +42,8 @@ def wcs_fit(filelist):
             pass
         else:
             fits_to_add_wcs = fits.open(os.path.splitext(filepath)[0] + ".fts")[0]
-            time_diff = np.abs(obs_time - obs_time[i])
-            time_diff_non_zeros = np.nonzero(time_diff)[0]
-            closest_idx = np.where(time_diff == np.min(time_diff_non_zeros))[0][0]
+            time_diff = obs_time - obs_time[i]
+            closest_idx = np.where(time_diff == closest_nonzero(time_diff, i))[0][0]
             wcs_ref_filepath = filelist_wcs_fitted[closest_idx]
             wcs_reference = WCS(fits.open(wcs_ref_filepath)[0].header)
             fits_to_add_wcs.header.update(wcs_reference.to_header)
