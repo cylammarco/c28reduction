@@ -55,7 +55,7 @@ def wcs_fit(filelist):
             wcs_reference = WCS(fits.open(wcs_ref_filepath, memmap=False)[0].header)
             fits_to_add_wcs.header.update(wcs_reference.to_header())
             fits_to_add_wcs.writeto(
-                os.path.join(folder_i, filepath),
+                os.path.join(filepath),
                 overwrite=True,
             )
 
