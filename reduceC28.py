@@ -37,14 +37,18 @@ def wcs_fit(filelist):
     # If WCS fit failed, apply the wcs from a frame with the least temporal difference
     # Get the filelist of all the WCS fitted light frames
     filelist_wcs_fitted = [os.path.splitext(i)[0] + ".new" for i in filelist]
+
+    obs_time_with_wcs = copy.deepcopy(obs_time)
     for i, filepath in enumerate(filelist_wcs_fitted):
         if os.path.exists(filepath):
-            pass
-        else:
+            obs_time_with_wcs[i] = -999.0
+
+    for i, filepath in enumerate(filelist_wcs_fitted):
+        if not os.path.exists(filepath):
             fits_to_add_wcs = fits.open(
                 os.path.splitext(filepath)[0] + ".fts", memmap=False
             )[0]
-            time_diff = obs_time - obs_time[i]
+            time_diff = obs_time_with_wcs - obs_time[i]
             closest_idx = np.where(time_diff == closest_nonzero(time_diff, i))[0][0]
             wcs_ref_filepath = filelist_wcs_fitted[closest_idx]
             wcs_reference = WCS(fits.open(wcs_ref_filepath, memmap=False)[0].header)
