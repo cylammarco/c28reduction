@@ -53,7 +53,7 @@ def wcs_fit(filelist):
             )[0][0]
             wcs_ref_filepath = filelist_wcs_fitted[closest_idx]
             wcs_reference = WCS(fits.open(wcs_ref_filepath, memmap=False)[0].header)
-            fits_to_add_wcs.header.update(wcs_reference.to_header)
+            fits_to_add_wcs.header.update(wcs_reference.to_header())
             fits_to_add_wcs.writeto(
                 os.path.join(folder_i, filepath),
                 overwrite=True,
@@ -928,7 +928,7 @@ for folder_i in folder_name:
         B_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
         for i, filename in enumerate(filelist_light_reduced_B):
             B_combined_fits.header["FRAME_" + str(i)] = filename
-        B_combined_fits.header.update(wcs_reference.to_header)
+        B_combined_fits.header.update(wcs_reference.to_header())
         B_combined_fits.writeto(
             os.path.join(folder_i, "B_total_stack.fits".format(folder_i)),
             overwrite=True,
@@ -962,7 +962,7 @@ for folder_i in folder_name:
         V_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
         for i, filename in enumerate(filelist_light_reduced_V):
             V_combined_fits.header["FRAME_" + str(i)] = filename
-        V_combined_fits.header.update(wcs_reference.to_header)
+        V_combined_fits.header.update(wcs_reference.to_header())
         V_combined_fits.writeto(
             os.path.join(folder_i, "V_total_stack.fits".format(folder_i)),
             overwrite=True,
@@ -996,7 +996,7 @@ for folder_i in folder_name:
         B_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
         for i, filename in enumerate(filelist_light_reduced_R):
             R_combined_fits.header["FRAME_" + str(i)] = filename
-        R_combined_fits.header.update(wcs_reference.to_header)
+        R_combined_fits.header.update(wcs_reference.to_header())
         R_combined_fits.writeto(
             os.path.join(folder_i, "R_total_stack.fits".format(folder_i)),
             overwrite=True,
@@ -1030,7 +1030,7 @@ for folder_i in folder_name:
         Ha_combined_fits = fits.PrimaryHDU(Ha_combined_data, fits.Header())
         for i, filename in enumerate(filelist_light_reduced_Ha):
             Ha_combined_fits.header["FRAME_" + str(i)] = filename
-        Ha_combined_fits.header.update(wcs_reference.to_header)
+        Ha_combined_fits.header.update(wcs_reference.to_header())
         Ha_combined_fits.writeto(
             os.path.join(folder_i, "Ha_total_stack.fits".format(folder_i)),
             overwrite=True,
