@@ -28,22 +28,27 @@ def wcs_fit(filelist):
         # WCS fit
         filepath = os.path.join(filename)
         subprocess.call(
-            "solve-field {} --ra 19:21:43.6 --dec -15:57:18 --radius 1 --cpulimit 30000".format(
+            "solve-field {} --ra 19:21:43.6 --dec -15:57:18 --radius 2 --cpulimit 30000 --overwrite".format(
                 filepath
             ),
             shell=True,
         )
         obs_time[i] = fits.open(filename, memmap=False)[0].header["JD"]
+
     # If WCS fit failed, apply the wcs from a frame with the least temporal difference
+    # Only do this after all frames are tried to fit with a WCS
+    #
     # Get the filelist of all the (supposedly) WCS fitted light frames
     filelist_wcs_fitted = [os.path.splitext(i)[0] + ".new" for i in filelist]
 
     obs_time_with_wcs = copy.deepcopy(obs_time)
     for i, filepath in enumerate(filelist_wcs_fitted):
-        if os.path.exists(filepath):
+        # If the wcs is not fitted, set the time to -999.0
+        if not os.path.exists(filepath):
             obs_time_with_wcs[i] = -999.0
 
     for i, filepath in enumerate(filelist_wcs_fitted):
+        # If the wcs is not fitted, find the nearest one
         if not os.path.exists(filepath):
             fits_to_add_wcs = fits.open(
                 os.path.splitext(filepath)[0] + ".fts", memmap=False
