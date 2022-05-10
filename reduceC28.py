@@ -772,8 +772,51 @@ for folder_i in folder_name:
         or args.build_total_stack_only
     ):
 
+        # Get all the light frames in different bands
+        filelist_light_reduced_B = []
+        filelist_light_reduced_V = []
+        filelist_light_reduced_R = []
+        filelist_light_reduced_Ha = []
+
+        B_combiner_list = []
+        V_combiner_list = []
+        R_combiner_list = []
+        Ha_combiner_list = []
+
+        B_exp_time_list = []
+        V_exp_time_list = []
+        R_exp_time_list = []
+        Ha_exp_time_list = []
+
+        # Get all the files
+        filelist_all = os.listdir(folder_i)
+
+        for filename in filelist_all:
+
+            if filename.endswith("-reduced.fts"):
+
+                _filter = os.path.splitext(filename)[0].split("-")[-2]
+                if _filter.upper() == "B":
+                    filelist_light_reduced_B.append(filename)
+                elif _filter.upper() == "V":
+                    filelist_light_reduced_V.append(filename)
+                elif _filter.upper() == "R":
+                    filelist_light_reduced_R.append(filename)
+                elif _filter.upper() == "HA":
+                    filelist_light_reduced_Ha.append(filename)
+                else:
+                    print("Unaccounted filters: {}".format(_name))
+                    print("It is not handled.")
+
+        filelist_light_reduced_all = (
+            filelist_light_reduced_B
+            + filelist_light_reduced_V
+            + filelist_light_reduced_R
+            + filelist_light_reduced_Ha
+        )
+
         reduced_light_filename_list = []
-        for filename in filelist_light_raw:
+        for filename in filelist_light_reduced_all:
             # Get the filter
             _filter = filename.split("-")[2]
             outfile_name, outfile_extension = os.path.splitext(filename)
