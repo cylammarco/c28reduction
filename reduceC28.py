@@ -915,7 +915,7 @@ for folder_i in folder_name:
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
                 output_projection=wcs_reference,
-                shape_out=np.shape(fits_file.data),
+                shape_out=np.shape(fits_file[0].data),
                 return_footprint=False,
             )
             B_combiner_list.append(
@@ -950,7 +950,7 @@ for folder_i in folder_name:
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
                 output_projection=wcs_reference,
-                shape_out=np.shape(fits_file.data),
+                shape_out=np.shape(fits_file[0].data),
                 return_footprint=False,
             )
             V_combiner_list.append(
@@ -985,7 +985,7 @@ for folder_i in folder_name:
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
                 output_projection=wcs_reference,
-                shape_out=np.shape(fits_file.data),
+                shape_out=np.shape(fits_file[0].data),
                 return_footprint=False,
             )
             R_combiner_list.append(
@@ -1020,7 +1020,7 @@ for folder_i in folder_name:
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
                 output_projection=wcs_reference,
-                shape_out=np.shape(fits_file.data),
+                shape_out=np.shape(fits_file[0].data),
                 return_footprint=False,
             )
             Ha_combiner_list.append(
