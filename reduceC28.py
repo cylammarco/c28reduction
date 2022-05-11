@@ -28,7 +28,7 @@ def wcs_fit(filelist):
         # WCS fit
         filepath = os.path.join(filename)
         subprocess.call(
-            "solve-field {} --ra 19:21:43.6 --dec -15:57:18 --radius 2 --cpulimit 30000 --overwrite".format(
+            "solve-field {} --ra 19:21:43.6 --dec -15:57:18 --radius 2 --cpulimit 30000".format(
                 filepath
             ),
             shell=True,
@@ -40,6 +40,7 @@ def wcs_fit(filelist):
     #
     # Get the filelist of all the (supposedly) WCS fitted light frames
     filelist_wcs_fitted = [os.path.splitext(i)[0] + ".new" for i in filelist]
+    print(filelist_wcs_fitted)
 
     obs_time_with_wcs = copy.deepcopy(obs_time)
     for i, filepath in enumerate(filelist_wcs_fitted):
