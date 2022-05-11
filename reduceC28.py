@@ -19,7 +19,8 @@ from reproject import reproject_exact
 def closest_nonzero(lst, start_index):
     nonzeros = [(i, x) for i, x in enumerate(lst) if x != 0]
     sorted_nonzeros = sorted(nonzeros, key=lambda x: abs(x[0] - start_index))
-    return sorted_nonzeros[0][1]
+    idx = np.argmin(np.vstack(sorted_nonzeros)[:, 1])
+    return sorted_nonzeros[idx][1]
 
 
 def wcs_fit(filelist):
@@ -40,7 +41,6 @@ def wcs_fit(filelist):
     #
     # Get the filelist of all the (supposedly) WCS fitted light frames
     filelist_wcs_fitted = [os.path.splitext(i)[0] + ".new" for i in filelist]
-    print(filelist_wcs_fitted)
 
     obs_time_with_wcs = copy.deepcopy(obs_time)
     for i, filepath in enumerate(filelist_wcs_fitted):
@@ -48,14 +48,14 @@ def wcs_fit(filelist):
         if not os.path.exists(filepath):
             obs_time_with_wcs[i] = -99999.0
 
-    for i, filepath in enumerate(filelist_wcs_fitted):
+    for idx, filepath in enumerate(filelist_wcs_fitted):
         # If the wcs is not fitted, find the nearest one
         if not os.path.exists(filepath):
             fits_to_add_wcs = fits.open(
                 os.path.splitext(filepath)[0] + ".fts", memmap=False
             )[0]
-            diff = obs_time_with_wcs - obs_time[i]
-            closest_idx = np.where(diff == closest_nonzero(diff, i))[0][0]
+            abs_diff = np.abs(obs_time_with_wcs - obs_time[i])
+            closest_idx = np.where(abs_diff == closest_nonzero(abs_diff, i))[0][0]
             wcs_ref_filepath = filelist_wcs_fitted[closest_idx]
             wcs_reference = WCS(fits.open(wcs_ref_filepath, memmap=False)[0].header)
             fits_to_add_wcs.header.update(wcs_reference.to_header())
