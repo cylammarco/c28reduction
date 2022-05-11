@@ -55,7 +55,7 @@ def wcs_fit(filelist):
                 os.path.splitext(filepath)[0] + ".fts", memmap=False
             )[0]
             diff = obs_time_with_wcs - obs_time[i]
-            closest_idx = np.where(diff == closest_nonzero(diff, 0))[0][0]
+            closest_idx = np.where(diff == closest_nonzero(diff, i))[0][0]
             wcs_ref_filepath = filelist_wcs_fitted[closest_idx]
             wcs_reference = WCS(fits.open(wcs_ref_filepath, memmap=False)[0].header)
             fits_to_add_wcs.header.update(wcs_reference.to_header())
