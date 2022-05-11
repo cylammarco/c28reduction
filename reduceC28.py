@@ -915,6 +915,7 @@ for folder_i in folder_name:
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
                 output_projection=wcs_reference,
+                shape_out=np.shape(fits_file.data),
                 return_footprint=False,
             )
             B_combiner_list.append(
@@ -944,11 +945,12 @@ for folder_i in folder_name:
         # V band
         for filename in filelist_light_reduced_V:
 
-            fits_file = fits.open(filename, memmap=False)
+            fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
             wcs = WCS(fits_file[0].header)
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
                 output_projection=wcs_reference,
+                shape_out=np.shape(fits_file.data),
                 return_footprint=False,
             )
             V_combiner_list.append(
@@ -966,7 +968,7 @@ for folder_i in folder_name:
         V_combiner.sigma_clipping()
         V_combined_data = V_combiner.average_combine()
 
-        V_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
+        V_combined_fits = fits.PrimaryHDU(V_combined_data, fits.Header())
         for i, filename in enumerate(filelist_light_reduced_V):
             V_combined_fits.header["FRAME_" + str(i)] = filename
         V_combined_fits.header.update(wcs_reference.to_header())
@@ -978,11 +980,12 @@ for folder_i in folder_name:
         # R band
         for filename in filelist_light_reduced_R:
 
-            fits_file = fits.open(filename, memmap=False)
+            fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
             wcs = WCS(fits_file[0].header)
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
                 output_projection=wcs_reference,
+                shape_out=np.shape(fits_file.data),
                 return_footprint=False,
             )
             R_combiner_list.append(
@@ -1000,7 +1003,7 @@ for folder_i in folder_name:
         R_combiner.sigma_clipping()
         R_combined_data = R_combiner.average_combine()
 
-        B_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
+        R_combined_fits = fits.PrimaryHDU(R_combined_data, fits.Header())
         for i, filename in enumerate(filelist_light_reduced_R):
             R_combined_fits.header["FRAME_" + str(i)] = filename
         R_combined_fits.header.update(wcs_reference.to_header())
@@ -1012,11 +1015,12 @@ for folder_i in folder_name:
         # Ha band
         for filename in filelist_light_reduced_Ha:
 
-            fits_file = fits.open(filename, memmap=False)
+            fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
             wcs = WCS(fits_file[0].header)
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
                 output_projection=wcs_reference,
+                shape_out=np.shape(fits_file.data),
                 return_footprint=False,
             )
             Ha_combiner_list.append(
