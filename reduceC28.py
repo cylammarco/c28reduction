@@ -902,13 +902,15 @@ for folder_i in folder_name:
             print("{} frames found.".format(len(filelist_light_reduced_all)))
 
         wcs_reference = WCS(
-            fits.open(filelist_light_reduced_all[0], memmap=False)[0].header
+            fits.open(
+                os.path.join(folder_i, filelist_light_reduced_all[0]), memmap=False
+            )[0].header
         )
 
         # B band
         for filename in filelist_light_reduced_B:
 
-            fits_file = fits.open(filename, memmap=False)
+            fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
             wcs = WCS(fits_file[0].header)
             fits_data_reprojected = reproject_exact(
                 input_data=fits_file,
