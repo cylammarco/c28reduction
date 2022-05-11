@@ -33,7 +33,7 @@ def wcs_fit(filelist):
             ),
             shell=True,
         )
-        obs_time[i] = fits.open(filename, memmap=False)[0].header["JD"]
+        obs_time[i] = float(fits.open(filename, memmap=False)[0].header["JD"])
 
     # If WCS fit failed, apply the wcs from a frame with the least temporal difference
     # Only do this after all frames are tried to fit with a WCS
@@ -46,7 +46,7 @@ def wcs_fit(filelist):
     for i, filepath in enumerate(filelist_wcs_fitted):
         # If the wcs is not fitted, set the time to -999.0
         if not os.path.exists(filepath):
-            obs_time_with_wcs[i] = -999.0
+            obs_time_with_wcs[i] = -99999.0
 
     for i, filepath in enumerate(filelist_wcs_fitted):
         # If the wcs is not fitted, find the nearest one
