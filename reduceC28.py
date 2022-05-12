@@ -13,7 +13,7 @@ from astropy.nddata import Cutout2D
 from astropy import units
 from astropy.wcs import WCS
 from ccdproc import Combiner
-from reproject import reproject_exact
+from reproject import reproject_adaptive
 
 
 def closest_nonzero(lst, start_index):
@@ -912,7 +912,7 @@ for folder_i in folder_name:
 
             fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
             wcs = WCS(fits_file[0].header)
-            fits_data_reprojected = reproject_exact(
+            fits_data_reprojected = reproject_adaptive(
                 input_data=fits_file,
                 output_projection=wcs_reference,
                 shape_out=np.shape(fits_file[0].data),
@@ -938,7 +938,7 @@ for folder_i in folder_name:
             B_combined_fits.header["FRAME_" + str(i)] = filename
         B_combined_fits.header.update(wcs_reference.to_header())
         B_combined_fits.writeto(
-            os.path.join(folder_i, "B_total_stack.fits".format(folder_i)),
+            os.path.join(folder_i, "B_nightly_stack.fits"),
             overwrite=True,
         )
 
@@ -947,7 +947,7 @@ for folder_i in folder_name:
 
             fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
             wcs = WCS(fits_file[0].header)
-            fits_data_reprojected = reproject_exact(
+            fits_data_reprojected = reproject_adaptive(
                 input_data=fits_file,
                 output_projection=wcs_reference,
                 shape_out=np.shape(fits_file[0].data),
@@ -973,7 +973,7 @@ for folder_i in folder_name:
             V_combined_fits.header["FRAME_" + str(i)] = filename
         V_combined_fits.header.update(wcs_reference.to_header())
         V_combined_fits.writeto(
-            os.path.join(folder_i, "V_total_stack.fits".format(folder_i)),
+            os.path.join(folder_i, "V_nightly_stack.fits"),
             overwrite=True,
         )
 
@@ -982,7 +982,7 @@ for folder_i in folder_name:
 
             fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
             wcs = WCS(fits_file[0].header)
-            fits_data_reprojected = reproject_exact(
+            fits_data_reprojected = reproject_adaptive(
                 input_data=fits_file,
                 output_projection=wcs_reference,
                 shape_out=np.shape(fits_file[0].data),
@@ -1008,7 +1008,7 @@ for folder_i in folder_name:
             R_combined_fits.header["FRAME_" + str(i)] = filename
         R_combined_fits.header.update(wcs_reference.to_header())
         R_combined_fits.writeto(
-            os.path.join(folder_i, "R_total_stack.fits".format(folder_i)),
+            os.path.join(folder_i, "R_nightly_stack.fits"),
             overwrite=True,
         )
 
@@ -1017,7 +1017,7 @@ for folder_i in folder_name:
 
             fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
             wcs = WCS(fits_file[0].header)
-            fits_data_reprojected = reproject_exact(
+            fits_data_reprojected = reproject_adaptive(
                 input_data=fits_file,
                 output_projection=wcs_reference,
                 shape_out=np.shape(fits_file[0].data),
@@ -1043,6 +1043,6 @@ for folder_i in folder_name:
             Ha_combined_fits.header["FRAME_" + str(i)] = filename
         Ha_combined_fits.header.update(wcs_reference.to_header())
         Ha_combined_fits.writeto(
-            os.path.join(folder_i, "Ha_total_stack.fits".format(folder_i)),
+            os.path.join(folder_i, "Ha_nightly_stack.fits"),
             overwrite=True,
         )
