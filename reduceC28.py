@@ -240,7 +240,7 @@ for folder_i in folder_name:
         or args.flat_frame_only
         or args.wcs_fit_only
         or args.flatfielding_only
-        or args.build_total_stack_only
+        or args.build_nightly_stack_only
     ):
 
         # Create or add to the master_bias
@@ -340,7 +340,7 @@ for folder_i in folder_name:
         or args.flat_frame_only
         or args.wcs_fit_only
         or args.flatfielding_only
-        or args.build_total_stack_only
+        or args.build_nightly_stack_only
     ):
 
         if os.path.exists(bias_master):
@@ -451,7 +451,7 @@ for folder_i in folder_name:
         or args.dark_frame_only
         or args.flatfielding_only
         or args.wcs_fit_only
-        or args.build_total_stack_only
+        or args.build_nightly_stack_only
     ):
 
         if os.path.exists(bias_master):
@@ -700,7 +700,7 @@ for folder_i in folder_name:
         or args.dark_frame_only
         or args.bias_frame_only
         or args.wcs_fit_only
-        or args.build_total_stack_only
+        or args.build_nightly_stack_only
     ):
 
         if os.path.exists(bias_master):
@@ -786,7 +786,7 @@ for folder_i in folder_name:
         or args.dark_frame_only
         or args.bias_frame_only
         or args.flatfielding_only
-        or args.build_total_stack_only
+        or args.build_nightly_stack_only
     ):
 
         # Get all the light frames in different bands
@@ -845,7 +845,7 @@ for folder_i in folder_name:
             os.path.splitext(i)[0] + ".new" for i in reduced_light_filename_list
         ]
 
-    if (args.build_total_stack) or (args.build_total_stack_only):
+    if (args.build_nightly_stack) or (args.build_nightly_stack_only):
 
         # Get all the light frames in different bands
         filelist_light_reduced_B = []
