@@ -15,6 +15,9 @@ from astropy.wcs import WCS
 from ccdproc import Combiner
 from reproject import reproject_adaptive
 
+sys.path.append("/home/mlam/git/py-hotpants")
+from pyhotpants import *
+
 
 def closest_nonzero(lst, start_index):
     nonzeros = [(i, x) for i, x in enumerate(lst) if x != 0]
@@ -97,6 +100,16 @@ parser.add_argument(
     help="Set to fit wcs only.",
 )
 parser.add_argument(
+    "--build-nightly-stack",
+    action="store_true",
+    help="(re)build the nightly stack in all filters.",
+)
+parser.add_argument(
+    "--build-nightly-stack-only",
+    action="store_true",
+    help="(re)build the nightly stack in all filters only.",
+)
+parser.add_argument(
     "--build-total-stack",
     action="store_true",
     help="(re)build the total stack in all filters.",
@@ -106,6 +119,12 @@ parser.add_argument(
     action="store_true",
     help="(re)build the total stack in all filters only.",
 )
+parser.add_argument(
+    "--difference-photometry-only",
+    action="store_true",
+    help="(re)compte the photometry in all filters only.",
+)
+
 parser.add_argument("--folder")
 args = parser.parse_args()
 
@@ -121,6 +140,14 @@ if folder_name is None:
 else:
 
     folder_name = [folder_name]
+
+
+output_folder = "output"
+# Create output folder for photometry
+if not os.path.exists(output_folder):
+
+    os.mkdir(output_folder)
+
 
 # get the master calibration frames
 dark_master = "dark_master.fits"
@@ -241,6 +268,8 @@ for folder_i in folder_name:
         or args.wcs_fit_only
         or args.flatfielding_only
         or args.build_nightly_stack_only
+        or args.build_total_stack_only
+        or args.difference_photometry_only
     ):
 
         # Create or add to the master_bias
@@ -341,6 +370,8 @@ for folder_i in folder_name:
         or args.wcs_fit_only
         or args.flatfielding_only
         or args.build_nightly_stack_only
+        or args.build_total_stack_only
+        or args.difference_photometry_only
     ):
 
         if os.path.exists(bias_master):
@@ -452,6 +483,8 @@ for folder_i in folder_name:
         or args.flatfielding_only
         or args.wcs_fit_only
         or args.build_nightly_stack_only
+        or args.build_total_stack_only
+        or args.difference_photometry_only
     ):
 
         if os.path.exists(bias_master):
@@ -701,6 +734,8 @@ for folder_i in folder_name:
         or args.bias_frame_only
         or args.wcs_fit_only
         or args.build_nightly_stack_only
+        or args.build_total_stack_only
+        or args.difference_photometry_only
     ):
 
         if os.path.exists(bias_master):
@@ -787,6 +822,8 @@ for folder_i in folder_name:
         or args.bias_frame_only
         or args.flatfielding_only
         or args.build_nightly_stack_only
+        or args.build_total_stack_only
+        or args.difference_photometry_only
     ):
 
         # Get all the light frames in different bands
@@ -908,25 +945,283 @@ for folder_i in folder_name:
         )
 
         # B band
-        for filename in filelist_light_reduced_B:
+        if filelist_light_reduced_B == []:
 
-            fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
-            wcs = WCS(fits_file[0].header)
-            fits_data_reprojected = reproject_adaptive(
-                input_data=fits_file,
-                output_projection=wcs_reference,
-                shape_out=np.shape(fits_file[0].data),
-                return_footprint=False,
+            print("There is not a nightly stack in the B this night.")
+
+        else:
+
+            for filename in filelist_light_reduced_B:
+
+                fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
+                wcs = WCS(fits_file[0].header)
+                fits_data_reprojected = reproject_adaptive(
+                    input_data=fits_file,
+                    output_projection=wcs_reference,
+                    shape_out=np.shape(fits_file[0].data),
+                    return_footprint=False,
+                )
+                B_combiner_list.append(
+                    CCDData(
+                        fits_data_reprojected,
+                        header=fits_file[0].header,
+                        wcs=wcs_reference,
+                        unit=units.count,
+                    )
+                )
+                B_exp_time_list.append(fits_file[0].header["EXPTIME"])
+
+            B_combiner = Combiner(B_combiner_list, dtype=np.float64)
+            B_combiner.weights = np.array(B_exp_time_list)
+            B_combiner.sigma_clipping()
+            B_combined_data = B_combiner.average_combine()
+            # make the cutout to 30 arcmin by 30 arcmin
+            B_combined_cutout = Cutout2D(
+                B_combined_data,
+                ups_sgr_coord,
+                30.0 * units.arcmin,
+                wcs=wcs_reference,
+                mode="partial",
             )
+            # put the cutout into a PrimaryHDU
+            B_combined_fits = fits.PrimaryHDU(B_combined_cutout.data, fits.Header())
+            for i, filename in enumerate(filelist_light_reduced_B):
+                B_combined_fits.header["FRAME_" + str(i)] = filename
+            B_combined_fits.header.update(B_combined_cutout.wcs.to_header())
+            B_combined_fits.header["XPOSURE"] = np.sum(B_exp_time_list)
+            B_combined_fits.writeto(
+                os.path.join(folder_i, "B_{}_nightly_stack.fits".format(folder_i)),
+                overwrite=True,
+            )
+
+        # V band
+        if filelist_light_reduced_V == []:
+
+            print("There is not a nightly stack in the V this night.")
+
+        else:
+
+            for filename in filelist_light_reduced_V:
+
+                fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
+                wcs = WCS(fits_file[0].header)
+                fits_data_reprojected = reproject_adaptive(
+                    input_data=fits_file,
+                    output_projection=wcs_reference,
+                    shape_out=np.shape(fits_file[0].data),
+                    return_footprint=False,
+                )
+                V_combiner_list.append(
+                    CCDData(
+                        fits_data_reprojected,
+                        header=fits_file[0].header,
+                        wcs=wcs_reference,
+                        unit=units.count,
+                    )
+                )
+                V_exp_time_list.append(fits_file[0].header["EXPTIME"])
+
+            V_combiner = Combiner(V_combiner_list, dtype=np.float64)
+            V_combiner.weights = np.array(V_exp_time_list)
+            V_combiner.sigma_clipping()
+            V_combined_data = V_combiner.average_combine()
+            # make the cutout to 30 arcmin by 30 arcmin
+            V_combined_cutout = Cutout2D(
+                V_combined_data,
+                ups_sgr_coord,
+                30.0 * units.arcmin,
+                wcs=wcs_reference,
+                mode="partial",
+            )
+            # put the cutout into a PrimaryHDU
+            V_combined_fits = fits.PrimaryHDU(V_combined_cutout.data, fits.Header())
+            for i, filename in enumerate(filelist_light_reduced_V):
+                V_combined_fits.header["FRAME_" + str(i)] = filename
+            V_combined_fits.header.update(V_combined_cutout.wcs.to_header())
+            V_combined_fits.header["XPOSURE"] = np.sum(V_exp_time_list)
+            V_combined_fits.writeto(
+                os.path.join(folder_i, "V_{}_nightly_stack.fits".format(folder_i)),
+                overwrite=True,
+            )
+
+        # R band
+        if filelist_light_reduced_R == []:
+
+            print("There is not a nightly stack in the R this night.")
+
+        else:
+
+            for filename in filelist_light_reduced_R:
+
+                fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
+                wcs = WCS(fits_file[0].header)
+                fits_data_reprojected = reproject_adaptive(
+                    input_data=fits_file,
+                    output_projection=wcs_reference,
+                    shape_out=np.shape(fits_file[0].data),
+                    return_footprint=False,
+                )
+                R_combiner_list.append(
+                    CCDData(
+                        fits_data_reprojected,
+                        header=fits_file[0].header,
+                        wcs=wcs_reference,
+                        unit=units.count,
+                    )
+                )
+                R_exp_time_list.append(fits_file[0].header["EXPTIME"])
+
+            R_combiner = Combiner(R_combiner_list, dtype=np.float64)
+            R_combiner.weights = np.array(R_exp_time_list)
+            R_combiner.sigma_clipping()
+            R_combined_data = R_combiner.average_combine()
+            # make the cutout to 30 arcmin by 30 arcmin
+            R_combined_cutout = Cutout2D(
+                R_combined_data,
+                ups_sgr_coord,
+                30.0 * units.arcmin,
+                wcs=wcs_reference,
+                mode="partial",
+            )
+            # put the cutout into a PrimaryHDU
+            R_combined_fits = fits.PrimaryHDU(R_combined_cutout.data, fits.Header())
+            for i, filename in enumerate(filelist_light_reduced_R):
+                R_combined_fits.header["FRAME_" + str(i)] = filename
+            R_combined_fits.header.update(R_combined_cutout.wcs.to_header())
+            R_combined_fits.header["XPOSURE"] = np.sum(R_exp_time_list)
+            R_combined_fits.writeto(
+                os.path.join(folder_i, "R_{}_nightly_stack.fits".format(folder_i)),
+                overwrite=True,
+            )
+
+        # Ha band
+        if filelist_light_reduced_Ha == []:
+
+            print("There is not a nightly stack in the Ha this night.")
+
+        else:
+
+            for filename in filelist_light_reduced_Ha:
+
+                fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
+                wcs = WCS(fits_file[0].header)
+                fits_data_reprojected = reproject_adaptive(
+                    input_data=fits_file,
+                    output_projection=wcs_reference,
+                    shape_out=np.shape(fits_file[0].data),
+                    return_footprint=False,
+                )
+                Ha_combiner_list.append(
+                    CCDData(
+                        fits_data_reprojected,
+                        header=fits_file[0].header,
+                        wcs=wcs_reference,
+                        unit=units.count,
+                    )
+                )
+                Ha_exp_time_list.append(fits_file[0].header["EXPTIME"])
+
+            Ha_combiner = Combiner(Ha_combiner_list, dtype=np.float64)
+            Ha_combiner.weights = np.array(Ha_exp_time_list)
+            Ha_combiner.sigma_clipping()
+            Ha_combined_data = Ha_combiner.average_combine()
+
+            # make the cutout to 30 arcmin by 30 arcmin
+            Ha_combined_cutout = Cutout2D(
+                Ha_combined_data,
+                ups_sgr_coord,
+                30.0 * units.arcmin,
+                wcs=wcs_reference,
+                mode="partial",
+            )
+            # put the cutout into a PrimaryHDU
+            Ha_combined_fits = fits.PrimaryHDU(Ha_combined_cutout.data, fits.Header())
+            for i, filename in enumerate(filelist_light_reduced_Ha):
+                Ha_combined_fits.header["FRAME_" + str(i)] = filename
+            Ha_combined_fits.header.update(Ha_combined_cutout.wcs.to_header())
+            Ha_combined_fits.header["XPOSURE"] = np.sum(Ha_exp_time_list)
+            Ha_combined_fits.writeto(
+                os.path.join(folder_i, "Ha_{}_nightly_stack.fits".format(folder_i)),
+                overwrite=True,
+            )
+
+
+# Generate total stack here
+if (
+    args.build_nightly_stack or args.build_total_stack_only
+):
+
+    # Get all the light frames in different bands
+    filepathlist_nightly_stack_B = []
+    filepathlist_nightly_stack_V = []
+    filepathlist_nightly_stack_R = []
+    filepathlist_nightly_stack_Ha = []
+
+    B_nightly_exp_time_list = []
+    V_nightly_exp_time_list = []
+    R_nightly_exp_time_list = []
+    Ha_nightly_exp_time_list = []
+
+    # Get all the nightly stack files
+    for folder_i in folder_name:
+
+        filelist_all = os.listdir(folder_i)
+
+        for filename in filelist_all:
+
+            if filename.endswith("nightly_stack.fits"):
+
+                _filter = filename.split("_")[0]
+
+                if _filter.upper() == "B":
+
+                    filepathlist_nightly_stack_B.append(
+                        os.path.join(folder_i, filename)
+                    )
+
+                elif _filter.upper() == "V":
+
+                    filepathlist_nightly_stack_V.append(
+                        os.path.join(folder_i, filename)
+                    )
+
+                elif _filter.upper() == "R":
+
+                    filepathlist_nightly_stack_R.append(
+                        os.path.join(folder_i, filename)
+                    )
+
+                elif _filter.upper() == "HA":
+
+                    filepathlist_nightly_stack_Ha.append(
+                        os.path.join(folder_i, filename)
+                    )
+
+                else:
+
+                    print("Unaccounted filters: {}".format(_name))
+                    print("It is not handled.")
+
+    # B band
+    if filepathlist_nightly_stack_B == []:
+
+        print("There is not any nightly stack in the B filter.")
+
+    else:
+
+        for filepath in filepathlist_nightly_stack_B:
+
+            fits_file = fits.open(filepath, memmap=False)
+            wcs = WCS(fits_file[0].header)
             B_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
                     header=fits_file[0].header,
-                    wcs=wcs_reference,
+                    wcs=wcs,
                     unit=units.count,
                 )
             )
-            B_exp_time_list.append(fits_file[0].header["EXPTIME"])
+            B_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
         B_combiner = Combiner(B_combiner_list, dtype=np.float64)
         B_combiner.weights = np.array(B_exp_time_list)
@@ -934,69 +1229,71 @@ for folder_i in folder_name:
         B_combined_data = B_combiner.average_combine()
 
         B_combined_fits = fits.PrimaryHDU(B_combined_data, fits.Header())
-        for i, filename in enumerate(filelist_light_reduced_B):
-            B_combined_fits.header["FRAME_" + str(i)] = filename
-        B_combined_fits.header.update(wcs_reference.to_header())
+        for i, filename in enumerate(filepathlist_nightly_stack_B):
+            B_combined_fits.header["FRAME_" + str(i)] = filepath
+        B_combined_fits.header.update(wcs.to_header())
+        B_combined_fits.header["XPOSURE"] = np.sum(B_nightly_exp_time_list)
         B_combined_fits.writeto(
-            os.path.join(folder_i, "B_nightly_stack.fits"),
+            "B_total_stack.fits",
             overwrite=True,
         )
 
-        # V band
-        for filename in filelist_light_reduced_V:
+    # V band
+    if filepathlist_nightly_stack_V == []:
 
-            fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
+        print("There is not any nightly stack in the V filter.")
+
+    else:
+
+        for filepath in filepathlist_nightly_stack_V:
+
+            fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
-            fits_data_reprojected = reproject_adaptive(
-                input_data=fits_file,
-                output_projection=wcs_reference,
-                shape_out=np.shape(fits_file[0].data),
-                return_footprint=False,
-            )
             V_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
                     header=fits_file[0].header,
-                    wcs=wcs_reference,
+                    wcs=wcs,
                     unit=units.count,
                 )
             )
-            V_exp_time_list.append(fits_file[0].header["EXPTIME"])
+            V_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
         V_combiner = Combiner(V_combiner_list, dtype=np.float64)
         V_combiner.weights = np.array(V_exp_time_list)
         V_combiner.sigma_clipping()
-        V_combined_data = V_combiner.average_combine()
+        V_combined_data = B_combiner.average_combine()
 
         V_combined_fits = fits.PrimaryHDU(V_combined_data, fits.Header())
-        for i, filename in enumerate(filelist_light_reduced_V):
-            V_combined_fits.header["FRAME_" + str(i)] = filename
-        V_combined_fits.header.update(wcs_reference.to_header())
+        for i, filename in enumerate(filepathlist_nightly_stack_V):
+            V_combined_fits.header["FRAME_" + str(i)] = filepath
+        V_combined_fits.header.update(wcs.to_header())
+        V_combined_fits.header["XPOSURE"] = np.sum(V_nightly_exp_time_list)
         V_combined_fits.writeto(
-            os.path.join(folder_i, "V_nightly_stack.fits"),
+            "V_total_stack.fits",
             overwrite=True,
         )
 
-        # R band
-        for filename in filelist_light_reduced_R:
+    # R band
+    if filepathlist_nightly_stack_R == []:
 
-            fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
+        print("There is not any nightly stack in the R filter.")
+
+    else:
+
+        for filepath in filepathlist_nightly_stack_R:
+
+            fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
-            fits_data_reprojected = reproject_adaptive(
-                input_data=fits_file,
-                output_projection=wcs_reference,
-                shape_out=np.shape(fits_file[0].data),
-                return_footprint=False,
-            )
             R_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
                     header=fits_file[0].header,
-                    wcs=wcs_reference,
+                    wcs=wcs,
                     unit=units.count,
                 )
             )
-            R_exp_time_list.append(fits_file[0].header["EXPTIME"])
+            R_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
         R_combiner = Combiner(R_combiner_list, dtype=np.float64)
         R_combiner.weights = np.array(R_exp_time_list)
@@ -1004,34 +1301,35 @@ for folder_i in folder_name:
         R_combined_data = R_combiner.average_combine()
 
         R_combined_fits = fits.PrimaryHDU(R_combined_data, fits.Header())
-        for i, filename in enumerate(filelist_light_reduced_R):
-            R_combined_fits.header["FRAME_" + str(i)] = filename
-        R_combined_fits.header.update(wcs_reference.to_header())
+        for i, filename in enumerate(filepathlist_nightly_stack_R):
+            R_combined_fits.header["FRAME_" + str(i)] = filepath
+        R_combined_fits.header.update(wcs.to_header())
+        R_combined_fits.header["XPOSURE"] = np.sum(R_nightly_exp_time_list)
         R_combined_fits.writeto(
-            os.path.join(folder_i, "R_nightly_stack.fits"),
+            "R_total_stack.fits",
             overwrite=True,
         )
 
-        # Ha band
-        for filename in filelist_light_reduced_Ha:
+    # Ha band
+    if filepathlist_nightly_stack_V == []:
 
-            fits_file = fits.open(os.path.join(folder_i, filename), memmap=False)
+        print("There is not any nightly stack in the Ha filter.")
+
+    else:
+
+        for filepath in filepathlist_nightly_stack_Ha:
+
+            fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
-            fits_data_reprojected = reproject_adaptive(
-                input_data=fits_file,
-                output_projection=wcs_reference,
-                shape_out=np.shape(fits_file[0].data),
-                return_footprint=False,
-            )
             Ha_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
                     header=fits_file[0].header,
-                    wcs=wcs_reference,
+                    wcs=wcs,
                     unit=units.count,
                 )
             )
-            Ha_exp_time_list.append(fits_file[0].header["EXPTIME"])
+            Ha_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
         Ha_combiner = Combiner(Ha_combiner_list, dtype=np.float64)
         Ha_combiner.weights = np.array(Ha_exp_time_list)
@@ -1039,10 +1337,208 @@ for folder_i in folder_name:
         Ha_combined_data = Ha_combiner.average_combine()
 
         Ha_combined_fits = fits.PrimaryHDU(Ha_combined_data, fits.Header())
-        for i, filename in enumerate(filelist_light_reduced_Ha):
-            Ha_combined_fits.header["FRAME_" + str(i)] = filename
-        Ha_combined_fits.header.update(wcs_reference.to_header())
+        for i, filename in enumerate(filepathlist_nightly_stack_Ha):
+            Ha_combined_fits.header["FRAME_" + str(i)] = filepath
+        Ha_combined_fits.header.update(wcs.to_header())
+        Ha_combined_fits.header["XPOSURE"] = np.sum(Ha_nightly_exp_time_list)
         Ha_combined_fits.writeto(
-            os.path.join(folder_i, "Ha_nightly_stack.fits"),
+            "Ha_total_stack.fits",
             overwrite=True,
         )
+
+
+# Difference imaging with hotpants here
+if (
+    not (
+        args.calibration_frame_only
+        or args.flat_frame_only
+        or args.dark_frame_only
+        or args.bias_frame_only
+        or args.flatfielding_only
+        or args.build_nightly_stack_only
+        or args.build_total_stack_only
+    )
+    or args.difference_photometry_only
+):
+
+for filter_i in ["B", "V", "R", "Ha"]:
+
+    data_stacked = fits.open("{}_total_stack.fits".format(filter_i))
+
+    # background subtraction for each frame
+    # see also https://photutils.readthedocs.io/en/stable/background.html
+    bkg = get_background(
+        data_stacked[0].data,
+        maxiters=10,
+        box_size=(31, 31),
+        filter_size=(7, 7),
+        create_figure=True,
+        output_folder=output_folder,
+    )
+    data_stacked_bkg_sub = data_stacked[0].data - bkg.background
+
+    # Get the star stamps to build psf
+    stars, stars_tbl = get_good_stars(
+        data_stacked_bkg_sub,
+        threshold=100.0,
+        box_size=25,
+        npeaks=25,
+        edge_size=25,
+        output_folder=output_folder,
+    )
+
+    # build the psf using the stacked image
+    # see also https://photutils.readthedocs.io/en/stable/epsf.html
+    epsf, fitted_stars, oversampling_factor = build_psf(
+        stars,
+        smoothing_kernel="quadratic",
+        maxiters=20,
+        create_figure=True,
+        save_figure=True,
+        output_folder=output_folder,
+    )
+
+    # Get the FWHM
+    # for the stack
+    sigma_x_stack, sigma_y_stack = fit_gaussian_for_fwhm(epsf.data, fit_sigma=True)
+    sigma_x_stack /= oversampling_factor
+    sigma_y_stack /= oversampling_factor
+
+    # Now work on the individual nightly stack
+    filepathlist_nightly_stack = []
+
+    # Get all the nightly stack files
+    for folder_i in folder_name:
+
+        filelist_all = os.listdir(folder_i)
+
+        for filename in filelist_all:
+
+            if filename.endswith("nightly_stack.fits"):
+
+                _filter = filename.split("_")[0]
+
+                if _filter.upper() == filter_i:
+
+                    filepathlist_nightly_stack.append(os.path.join(folder_i, filename))
+
+                else:
+
+                    print("Unaccounted filters: {}".format(_name))
+                    print("It is not handled.")
+
+    # for each frame, get the sigma (note fit_sigma=Ture, meaning it's returning sigma instead of FWHM)
+    sigma_x, sigma_y = get_all_fwhm(
+        filepathlist_nightly_stack,
+        stars_tbl,
+        fit_sigma=True,
+        sigma=3.0,
+        sigma_lower=3.0,
+        sigma_upper=3.0,
+        threshold=5000.0,
+        box_size=25,
+        maxiters=10,
+        norm_radius=5.5,
+        npeaks=20,
+        shift_val=0.01,
+        recentering_boxsize=(5, 5),
+        recentering_maxiters=10,
+        center_accuracy=0.001,
+        smoothing_kernel="quadratic",
+        output_folder=output_folder,
+    )
+
+    # Use the FWHM to generate script for hotpants
+    # see also https://github.com/acbecker/hotpants
+    sigma_ref = np.sqrt(sigma_x_stack**2.0 + sigma_y_stack**2.0)
+    sigma_list = np.sqrt(sigma_x**2.0 + sigma_y**2.0)
+    diff_image_script = generate_hotpants_script(
+        aligned_file_list[np.argmin(sigma_list)],
+        aligned_file_list,
+        min(sigma_list),
+        sigma_list,
+        hotpants="hotpants",
+        write_to_file=True,
+        filename=os.path.join(output_folder, "diff_image.sh"),
+        overwrite=True,
+        tu=50000,
+        tg=2.4,
+        tr=12.0,
+        iu=50000,
+        ig=2.4,
+        ir=12.0,
+    )
+    # run hotpants
+    diff_image_list = run_hotpants(diff_image_script, output_folder=output_folder)
+
+    # Use the FWHM to find the stars in the stacked image
+    # see also https://photutils.readthedocs.io/en/stable/detection.html
+    source_list = find_star(
+        data_stacked_bkg_sub,
+        fwhm=sigma_x_stack * 2.355,
+        n_threshold=10.0,
+        x=len(data_stacked[0].data) / 2.0,
+        y=len(data_stacked[0].data) / 2.0,
+        radius=300,
+        show=True,
+        output_folder=output_folder,
+    )
+
+    # Use the psf and stars to perdo forced photometry on the differenced images
+    # see also https://photutils.readthedocs.io/en/latest/psf.html
+    photometry_list = do_photometry(
+        diff_image_list,
+        source_list,
+        sigma_list,
+        output_folder=output_folder,
+        save_individual=True,
+    )
+
+"""
+# get lightcurves
+source_id, mjd, flux, flux_err, flux_fit = get_lightcurve(
+    photometry_list, source_list["id"], plot=True, output_folder=output_folder
+)
+
+# plot all lightcurves in the same figure
+# plot_lightcurve(mjd, flux, flux_err)
+
+# plot all lightcurves in the separate figure
+# plot_lightcurve(mjd, flux, flux_err, same_figure=False)
+
+# Explicitly plot 1 lightcurve
+target = 13
+target_arg = source_id == target
+period = 33.625 / 60.0 / 24.0
+period = 1
+# scatter((mjd[target_arg] / period) % 1, flux[target_arg], s=1)
+# ylim(-5000, 5000)
+
+
+plot_lightcurve(
+    (mjd[target_arg] / period) % 1,
+    flux[target_arg],
+    flux_err[target_arg],
+    source_id=target,
+    output_folder=output_folder,
+)
+"""
+
+# Explicitly plot a few lightcurves
+"""
+good_stars = [1, 5, 8, 10, 3]
+mjd_good_stars = np.array([mjd[i] for i in good_stars])
+flux_good_stars = np.array([flux[i] for i in good_stars])
+flux_err_good_stars = np.array([flux_err[i] for i in good_stars])
+flux_ensemble = ensemble_photometry(flux_good_stars, flux_err_good_stars)
+plot_lightcurve(mjd_good_stars,
+                flux_good_stars,
+                flux_err_good_stars,
+                source_id=good_stars,
+                output_folder=output_folder)
+plot_lightcurve(mjd_good_stars,
+                flux_ensemble,
+                flux_err_good_stars,
+                source_id=good_stars,
+                output_folder=output_folder)
+"""
