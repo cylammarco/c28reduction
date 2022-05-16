@@ -977,7 +977,7 @@ for folder_i in folder_name:
             B_combined_data = B_combiner.average_combine()
             # make the cutout to 30 arcmin by 30 arcmin
             B_combined_cutout = Cutout2D(
-                B_combined_data,
+                B_combined_data.data,
                 ups_sgr_coord,
                 30.0 * units.arcmin,
                 wcs=wcs_reference,
@@ -1027,7 +1027,7 @@ for folder_i in folder_name:
             V_combined_data = V_combiner.average_combine()
             # make the cutout to 30 arcmin by 30 arcmin
             V_combined_cutout = Cutout2D(
-                V_combined_data,
+                V_combined_data.data,
                 ups_sgr_coord,
                 30.0 * units.arcmin,
                 wcs=wcs_reference,
@@ -1077,7 +1077,7 @@ for folder_i in folder_name:
             R_combined_data = R_combiner.average_combine()
             # make the cutout to 30 arcmin by 30 arcmin
             R_combined_cutout = Cutout2D(
-                R_combined_data,
+                R_combined_data.data,
                 ups_sgr_coord,
                 30.0 * units.arcmin,
                 wcs=wcs_reference,
@@ -1128,7 +1128,7 @@ for folder_i in folder_name:
 
             # make the cutout to 30 arcmin by 30 arcmin
             Ha_combined_cutout = Cutout2D(
-                Ha_combined_data,
+                Ha_combined_data.data,
                 ups_sgr_coord,
                 30.0 * units.arcmin,
                 wcs=wcs_reference,
