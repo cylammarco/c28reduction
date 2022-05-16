@@ -1155,6 +1155,11 @@ if args.build_nightly_stack or args.build_total_stack_only:
     filepathlist_nightly_stack_R = []
     filepathlist_nightly_stack_Ha = []
 
+    B_nightly_combiner_list = []
+    V_nightly_combiner_list = []
+    R_nightly_combiner_list = []
+    Ha_nightly_combiner_list = []
+
     B_nightly_exp_time_list = []
     V_nightly_exp_time_list = []
     R_nightly_exp_time_list = []
@@ -1211,7 +1216,7 @@ if args.build_nightly_stack or args.build_total_stack_only:
 
             fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
-            B_combiner_list.append(
+            B_nightly_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
                     header=fits_file[0].header,
@@ -1221,7 +1226,7 @@ if args.build_nightly_stack or args.build_total_stack_only:
             )
             B_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
-        B_combiner = Combiner(B_combiner_list, dtype=np.float64)
+        B_combiner = Combiner(B_nightly_combiner_list, dtype=np.float64)
         B_combiner.weights = np.array(B_exp_time_list)
         B_combiner.sigma_clipping()
         B_combined_data = B_combiner.average_combine()
@@ -1247,7 +1252,7 @@ if args.build_nightly_stack or args.build_total_stack_only:
 
             fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
-            V_combiner_list.append(
+            V_nightly_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
                     header=fits_file[0].header,
@@ -1257,7 +1262,7 @@ if args.build_nightly_stack or args.build_total_stack_only:
             )
             V_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
-        V_combiner = Combiner(V_combiner_list, dtype=np.float64)
+        V_combiner = Combiner(V_nightly_combiner_list, dtype=np.float64)
         V_combiner.weights = np.array(V_exp_time_list)
         V_combiner.sigma_clipping()
         V_combined_data = B_combiner.average_combine()
@@ -1283,7 +1288,7 @@ if args.build_nightly_stack or args.build_total_stack_only:
 
             fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
-            R_combiner_list.append(
+            R_nightly_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
                     header=fits_file[0].header,
@@ -1293,7 +1298,7 @@ if args.build_nightly_stack or args.build_total_stack_only:
             )
             R_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
-        R_combiner = Combiner(R_combiner_list, dtype=np.float64)
+        R_combiner = Combiner(R_nightly_combiner_list, dtype=np.float64)
         R_combiner.weights = np.array(R_exp_time_list)
         R_combiner.sigma_clipping()
         R_combined_data = R_combiner.average_combine()
@@ -1319,7 +1324,7 @@ if args.build_nightly_stack or args.build_total_stack_only:
 
             fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
-            Ha_combiner_list.append(
+            Ha_nightly_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
                     header=fits_file[0].header,
@@ -1329,7 +1334,7 @@ if args.build_nightly_stack or args.build_total_stack_only:
             )
             Ha_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
-        Ha_combiner = Combiner(Ha_combiner_list, dtype=np.float64)
+        Ha_combiner = Combiner(Ha_nightly_combiner_list, dtype=np.float64)
         Ha_combiner.weights = np.array(Ha_exp_time_list)
         Ha_combiner.sigma_clipping()
         Ha_combined_data = Ha_combiner.average_combine()
