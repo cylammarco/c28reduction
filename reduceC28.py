@@ -1216,6 +1216,12 @@ if args.build_nightly_stack or args.build_total_stack_only:
 
             fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
+            fits_data_reprojected = reproject_adaptive(
+                input_data=fits_file,
+                output_projection=wcs_reference,
+                shape_out=np.shape(fits_file[0].data),
+                return_footprint=False,
+            )
             B_nightly_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
@@ -1252,6 +1258,12 @@ if args.build_nightly_stack or args.build_total_stack_only:
 
             fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
+            fits_data_reprojected = reproject_adaptive(
+                input_data=fits_file,
+                output_projection=wcs_reference,
+                shape_out=np.shape(fits_file[0].data),
+                return_footprint=False,
+            )
             V_nightly_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
@@ -1288,6 +1300,12 @@ if args.build_nightly_stack or args.build_total_stack_only:
 
             fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
+            fits_data_reprojected = reproject_adaptive(
+                input_data=fits_file,
+                output_projection=wcs_reference,
+                shape_out=np.shape(fits_file[0].data),
+                return_footprint=False,
+            )
             R_nightly_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
@@ -1324,6 +1342,12 @@ if args.build_nightly_stack or args.build_total_stack_only:
 
             fits_file = fits.open(filepath, memmap=False)
             wcs = WCS(fits_file[0].header)
+            fits_data_reprojected = reproject_adaptive(
+                input_data=fits_file,
+                output_projection=wcs_reference,
+                shape_out=np.shape(fits_file[0].data),
+                return_footprint=False,
+            )
             Ha_nightly_combiner_list.append(
                 CCDData(
                     fits_data_reprojected,
