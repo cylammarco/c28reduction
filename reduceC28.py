@@ -32,7 +32,7 @@ def wcs_fit(filelist):
         # WCS fit
         filepath = os.path.join(filename)
         subprocess.call(
-            "solve-field {} --ra 19:21:43.6 --dec -15:57:18 --radius 2 --cpulimit 30000".format(
+            "solve-field {} --ra='19:21:43.6' --dec='-15:57:18' --radius=1.0 --downsample=5 --scale-low=0.83 --scale-high=0.84 --scale-units='arcsecperpix' --depth=20 --resort --cpulimit 30000".format(
                 filepath
             ),
             shell=True,
