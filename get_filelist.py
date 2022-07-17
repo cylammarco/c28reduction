@@ -23,6 +23,21 @@ def get_filelist(folder_name, frame_type):
     filelist_shutter_flat_V_raw = []
     filelist_shutter_flat_R_raw = []
 
+    filelist_light_reduced_B = []
+    filelist_light_reduced_V = []
+    filelist_light_reduced_R = []
+    filelist_light_reduced_Ha = []
+
+    filelist_light_reduced_wcs_fitted_B = []
+    filelist_light_reduced_wcs_fitted_V = []
+    filelist_light_reduced_wcs_fitted_R = []
+    filelist_light_reduced_wcs_fitted_Ha = []
+
+    filelist_light_reduced_wcs_fitted_reprojected_B = []
+    filelist_light_reduced_wcs_fitted_reprojected_V = []
+    filelist_light_reduced_wcs_fitted_reprojected_R = []
+    filelist_light_reduced_wcs_fitted_reprojected_Ha = []
+
     for filename in filelist_all:
 
         if (

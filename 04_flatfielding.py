@@ -8,10 +8,12 @@ from astropy.nddata import CCDData
 from astropy import units
 from ccdproc import Combiner
 
-from .get_filelist import get_filelist
+from get_filelist import get_filelist
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--folder")
+args = parser.parse_args()
 
 # get the name of the folder that holds the frames
 folder_name = args.folder
@@ -31,21 +33,47 @@ if not os.path.exists(output_folder):
 
     os.mkdir(output_folder)
 
-        if os.path.exists(bias_master):
-            # Load the bias master if exists
-            bias_master_fits = fits.open(bias_master, memmap=False)
-        else:
-            raise ValueError(
-                "Bias master frame: {} does not exist.".format(bias_master)
-            )
+# get the master calibration frames
+dark_master = "dark_master.fits"
+bias_master = "bias_master.fits"
+flat_master_B = "flat_master_B.fits"
+flat_master_V = "flat_master_V.fits"
+flat_master_R = "flat_master_R.fits"
+flat_master_Ha = "flat_master_Ha.fits"
+flat_master = {
+    "B": flat_master_B,
+    "V": flat_master_V,
+    "R": flat_master_R,
+    "HA": flat_master_Ha,
+}
 
-        if os.path.exists(dark_master):
-            # Load the dark master if exists
-            dark_master_fits = fits.open(dark_master, memmap=False)
-        else:
-            raise ValueError(
-                "Dark master frame: {} does not exist.".format(dark_master)
-            )
+# We don't need shutter flats for H-alpha
+shutter_flat_master_B02 = "shutter_flat_master_B02.fits"
+shutter_flat_master_B05 = "shutter_flat_master_B05.fits"
+shutter_flat_master_V = "shutter_flat_master_V.fits"
+shutter_flat_master_R = "shutter_flat_master_R.fits"
+shutter_flat_master = {
+    "B02": shutter_flat_master_B02,
+    "B05": shutter_flat_master_B05,
+    "V": shutter_flat_master_V,
+    "R": shutter_flat_master_R,
+}
+
+if os.path.exists(bias_master):
+    # Load the bias master if exists
+    bias_master_fits = fits.open(bias_master, memmap=False)
+else:
+    raise ValueError(
+        "Bias master frame: {} does not exist.".format(bias_master)
+    )
+
+if os.path.exists(dark_master):
+    # Load the dark master if exists
+    dark_master_fits = fits.open(dark_master, memmap=False)
+else:
+    raise ValueError(
+        "Dark master frame: {} does not exist.".format(dark_master)
+    )
 
 for folder_i in folder_name:
 

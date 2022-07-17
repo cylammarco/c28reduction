@@ -8,10 +8,12 @@ from astropy.nddata import CCDData
 from astropy import units
 from ccdproc import Combiner
 
-from .get_filelist import get_filelist
+from get_filelist import get_filelist
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--folder")
+args = parser.parse_args()
 
 # get the name of the folder that holds the frames
 folder_name = args.folder
@@ -47,7 +49,6 @@ for folder_i in folder_name:
         n_bias_nightly = 0
         n_bias_master = 0
         bias_ccddata_list = []
-        bias_nightly_frame_name = []
         bias_master_frame_name = []
         # if master bias exists
         if os.path.exists(bias_master):
@@ -86,6 +87,7 @@ for folder_i in folder_name:
             )
             # Update master bias
             if os.path.exists(bias_master):
+                print("Updating master bias.")
                 # weighted average combine of the nightly and total master bias
                 new_bias_master_data = Combiner(
                     [
@@ -110,7 +112,10 @@ for folder_i in folder_name:
                 )
                 bias_master_fits = None
                 del bias_master_fits
-                for i, filename in enumerate(bias_nightly_frame_name):
+                print("Current header: ")
+                print(new_bias_master_fits.header)
+                print("")
+                for i, filename in enumerate(filelist_bias_raw):
                     new_bias_master_fits.header[
                         "FRAME_" + str(i + n_bias_master)
                     ] = filename

@@ -10,10 +10,12 @@ from astropy.wcs import WCS
 from ccdproc import Combiner
 from reproject import reproject_adaptive
 
-from .get_filelist import get_filelist
+from get_filelist import get_filelist
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--folder")
+args = parser.parse_args()
 
 # get the name of the folder that holds the frames
 folder_name = args.folder

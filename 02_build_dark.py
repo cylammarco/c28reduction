@@ -1,4 +1,5 @@
 import argparse
+import copy
 import glob
 import os
 
@@ -8,10 +9,12 @@ from astropy.nddata import CCDData
 from astropy import units
 from ccdproc import Combiner
 
-from .get_filelist import get_filelist
+from get_filelist import get_filelist
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--folder")
+args = parser.parse_args()
 
 # get the name of the folder that holds the frames
 folder_name = args.folder
@@ -57,7 +60,6 @@ for folder_i in folder_name:
         n_dark_nightly = 0
         n_dark_master = 0
         dark_ccddata_list = []
-        dark_nightly_frame_name = []
         dark_master_frame_name = []
         # if master dark exists
         if os.path.exists(dark_master):
@@ -125,7 +127,7 @@ for folder_i in folder_name:
                 )
                 dark_master_fits = None
                 del dark_master_fits
-                for i, filename in enumerate(dark_nightly_frame_name):
+                for i, filename in enumerate(filelist_dark_raw):
                     new_dark_master_fits.header[
                         "FRAME_" + str(i + n_dark_master)
                     ] = filename

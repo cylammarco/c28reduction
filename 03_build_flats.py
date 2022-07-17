@@ -1,4 +1,5 @@
 import argparse
+import copy
 import glob
 import os
 
@@ -8,10 +9,12 @@ from astropy.nddata import CCDData
 from astropy import units
 from ccdproc import Combiner
 
-from .get_filelist import get_filelist
+from get_filelist import get_filelist
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--folder")
+args = parser.parse_args()
 
 # get the name of the folder that holds the frames
 folder_name = args.folder
@@ -25,29 +28,54 @@ else:
     folder_name = [folder_name]
 
 
+# get the master calibration frames
+dark_master = "dark_master.fits"
+bias_master = "bias_master.fits"
+
+flat_master_B = "flat_master_B.fits"
+flat_master_V = "flat_master_V.fits"
+flat_master_R = "flat_master_R.fits"
+flat_master_Ha = "flat_master_Ha.fits"
+flat_master = {
+    "B": flat_master_B,
+    "V": flat_master_V,
+    "R": flat_master_R,
+    "HA": flat_master_Ha,
+}
+
+# We don't need shutter flats for H-alpha
+shutter_flat_master_B02 = "shutter_flat_master_B02.fits"
+shutter_flat_master_B05 = "shutter_flat_master_B05.fits"
+shutter_flat_master_V = "shutter_flat_master_V.fits"
+shutter_flat_master_R = "shutter_flat_master_R.fits"
+shutter_flat_master = {
+    "B02": shutter_flat_master_B02,
+    "B05": shutter_flat_master_B05,
+    "V": shutter_flat_master_V,
+    "R": shutter_flat_master_R,
+}
+
 output_folder = "output"
 # Create output folder for photometry
 if not os.path.exists(output_folder):
 
     os.mkdir(output_folder)
 
-        if os.path.exists(bias_master):
-            # Load the bias master if exists
-            bias_master_fits = fits.open(bias_master, memmap=False)
-        else:
-            raise ValueError(
-                "Bias master frame: {} does not exist.".format(bias_master)
-            )
+if os.path.exists(bias_master):
+    # Load the bias master if exists
+    bias_master_fits = fits.open(bias_master, memmap=False)
+else:
+    raise ValueError(
+        "Bias master frame: {} does not exist.".format(bias_master)
+    )
 
-        if os.path.exists(dark_master):
-            # Load the dark master if exists
-            dark_master_fits = fits.open(dark_master, memmap=False)
-        else:
-            raise ValueError(
-                "Dark master frame: {} does not exist.".format(dark_master)
-            )
-
-
+if os.path.exists(dark_master):
+    # Load the dark master if exists
+    dark_master_fits = fits.open(dark_master, memmap=False)
+else:
+    raise ValueError(
+        "Dark master frame: {} does not exist.".format(dark_master)
+    )
 
 for folder_i in folder_name:
 
@@ -58,6 +86,7 @@ for folder_i in folder_name:
     # All flats are converted into count per second
     # add the nightly flats to the master if nightly flats are available
     for filelist_flat_raw in filelist_flat_raw_all:
+        print(filelist_flat_raw)
         if filelist_flat_raw != []:
             _filename_split = os.path.splitext(filelist_flat_raw[0])[0].split("-")
             if _filename_split[0] == "FF":
@@ -101,7 +130,7 @@ for folder_i in folder_name:
                 flat_master_nightly_data = Combiner(
                     flat_ccddata_list, dtype=np.float64
                 )
-                flat_master_nightly_data.minmax_clipping(max_clip=65000)
+                flat_master_nightly_data.minmax_clipping(max_clip=60000)
                 flat_master_nightly_data.sigma_clipping()
                 flat_master_nightly_data_combined = (
                     flat_master_nightly_data.average_combine()
@@ -140,6 +169,7 @@ for folder_i in folder_name:
                     new_flat_master_data.weights = np.array(
                         [n_flat_master, n_flat_nightly]
                     )
+                    new_flat_master_data.minmax_clipping(max_clip=60000)
                     new_flat_master_data.sigma_clipping()
                     new_flat_master_data_combined = (
                         new_flat_master_data.average_combine()
@@ -150,7 +180,7 @@ for folder_i in folder_name:
                     new_flat_master_fits = fits.PrimaryHDU(
                         new_flat_master_data_combined, flat_master_fits_header
                     )
-                    for i, filename in enumerate(flat_nightly_frame_name):
+                    for i, filename in enumerate(filelist_flat_raw):
                         filename_temp = folder_i + "-" + filename
                         new_flat_master_fits.header[
                             "FRAME_" + str(i + n_flat_master)
@@ -212,7 +242,7 @@ for folder_i in folder_name:
                 flat_master_nightly_data = Combiner(
                     flat_ccddata_list, dtype=np.float64
                 )
-                flat_master_nightly_data.minmax_clipping(max_clip=65000)
+                flat_master_nightly_data.minmax_clipping(max_clip=60000)
                 flat_master_nightly_data.sigma_clipping()
                 flat_master_nightly_data_combined = (
                     flat_master_nightly_data.average_combine()
@@ -251,6 +281,7 @@ for folder_i in folder_name:
                     new_flat_master_data.weights = np.array(
                         [n_flat_master, n_flat_nightly]
                     )
+                    new_flat_master_data.minmax_clipping(max_clip=60000)
                     new_flat_master_data.sigma_clipping()
                     new_flat_master_data_combined = (
                         new_flat_master_data.average_combine()
@@ -261,7 +292,7 @@ for folder_i in folder_name:
                     new_flat_master_fits = fits.PrimaryHDU(
                         new_flat_master_data_combined, flat_master_fits_header
                     )
-                    for i, filename in enumerate(flat_nightly_frame_name):
+                    for i, filename in enumerate(filelist_flat_raw):
                         filename_temp = folder_i + "-" + filename
                         new_flat_master_fits.header[
                             "FRAME_" + str(i + n_flat_master)
