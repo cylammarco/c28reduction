@@ -6,7 +6,6 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.nddata import CCDData
-from astropy.nddata import Cutout2D
 from astropy import units
 from astropy.wcs import WCS
 from ccdproc import Combiner
@@ -56,9 +55,8 @@ for folder_i in folder_name:
     ) = filelist_light_reduced_wcs_fitted_reprojected
 
     wcs_reference = WCS(
-        fits.open(os.path.join(folder_i, filelist_light_reduced_all[0]), memmap=False)[
-            0
-        ].header
+        fits.open("skv12573619882825_1.fits", memmap=False
+        )[0].header
     )
 
     # B band
@@ -75,28 +73,20 @@ for folder_i in folder_name:
         )
         B_exp_time_list.append(fits_file[0].header["EXPTIME"])
 
-    B_combiner = Combiner(B_combiner_list, dtype=np.float64)
-    B_combiner.weights = np.array(B_exp_time_list)
-    B_combiner.sigma_clipping()
-    B_combined_data = B_combiner.average_combine()
-    # make the cutout to 30 arcmin by 30 arcmin
-    B_combined_cutout = Cutout2D(
-        B_combined_data.data,
-        ups_sgr_coord,
-        30.0 * units.arcmin,
-        wcs=wcs_reference,
-        mode="partial",
-    )
-    # put the cutout into a PrimaryHDU
-    B_combined_fits = fits.PrimaryHDU(B_combined_cutout.data, fits.Header())
-    for i, filename in enumerate(filelist_light_reduced_B):
-        B_combined_fits.header["FRAME_" + str(i)] = filename
-    B_combined_fits.header.update(B_combined_cutout.wcs.to_header())
-    B_combined_fits.header["XPOSURE"] = np.sum(B_exp_time_list)
-    B_combined_fits.writeto(
-        os.path.join(folder_i, "B_{}_nightly_stack.fits".format(folder_i)),
-        overwrite=True,
-    )
+    if len(B_combiner_list) > 0:
+        B_combiner = Combiner(B_combiner_list, dtype=np.float64)
+        B_combiner.weights = np.array(B_exp_time_list)
+        B_combiner.sigma_clipping()
+        B_combined_data = B_combiner.average_combine()
+        # put the cutout into a PrimaryHDU
+        B_combined_fits = fits.PrimaryHDU(B_combined_data.data, fits.Header())
+        for i, filename in enumerate(filelist_light_reduced_wcs_fitted_reprojected_B):
+            B_combined_fits.header["FRAME_" + str(i)] = filename
+        B_combined_fits.header["XPOSURE"] = np.sum(B_exp_time_list)
+        B_combined_fits.writeto(
+            os.path.join(folder_i, "B_{}_nightly_stack.fits".format(folder_i[:-3])),
+            overwrite=True,
+        )
 
     # V band
     for filename in filelist_light_reduced_wcs_fitted_reprojected_V:
@@ -112,28 +102,20 @@ for folder_i in folder_name:
         )
         V_exp_time_list.append(fits_file[0].header["EXPTIME"])
 
-    V_combiner = Combiner(V_combiner_list, dtype=np.float64)
-    V_combiner.weights = np.array(V_exp_time_list)
-    V_combiner.sigma_clipping()
-    V_combined_data = V_combiner.average_combine()
-    # make the cutout to 30 arcmin by 30 arcmin
-    V_combined_cutout = Cutout2D(
-        V_combined_data.data,
-        ups_sgr_coord,
-        30.0 * units.arcmin,
-        wcs=wcs_reference,
-        mode="partial",
-    )
-    # put the cutout into a PrimaryHDU
-    V_combined_fits = fits.PrimaryHDU(V_combined_cutout.data, fits.Header())
-    for i, filename in enumerate(filelist_light_reduced_V):
-        V_combined_fits.header["FRAME_" + str(i)] = filename
-    V_combined_fits.header.update(V_combined_cutout.wcs.to_header())
-    V_combined_fits.header["XPOSURE"] = np.sum(V_exp_time_list)
-    V_combined_fits.writeto(
-        os.path.join(folder_i, "V_{}_nightly_stack.fits".format(folder_i)),
-        overwrite=True,
-    )
+    if len(V_combiner_list) > 0:
+        V_combiner = Combiner(V_combiner_list, dtype=np.float64)
+        V_combiner.weights = np.array(V_exp_time_list)
+        V_combiner.sigma_clipping()
+        V_combined_data = V_combiner.average_combine()
+        # put the cutout into a PrimaryHDU
+        V_combined_fits = fits.PrimaryHDU(V_combined_data.data, fits.Header())
+        for i, filename in enumerate(filelist_light_reduced_wcs_fitted_reprojected_V):
+            V_combined_fits.header["FRAME_" + str(i)] = filename
+        V_combined_fits.header["XPOSURE"] = np.sum(V_exp_time_list)
+        V_combined_fits.writeto(
+            os.path.join(folder_i, "V_{}_nightly_stack.fits".format(folder_i[:-3])),
+            overwrite=True,
+        )
 
     # R band
     for filename in filelist_light_reduced_wcs_fitted_reprojected_R:
@@ -149,28 +131,20 @@ for folder_i in folder_name:
         )
         R_exp_time_list.append(fits_file[0].header["EXPTIME"])
 
-    R_combiner = Combiner(R_combiner_list, dtype=np.float64)
-    R_combiner.weights = np.array(R_exp_time_list)
-    R_combiner.sigma_clipping()
-    R_combined_data = R_combiner.average_combine()
-    # make the cutout to 30 arcmin by 30 arcmin
-    R_combined_cutout = Cutout2D(
-        R_combined_data.data,
-        ups_sgr_coord,
-        30.0 * units.arcmin,
-        wcs=wcs_reference,
-        mode="partial",
-    )
-    # put the cutout into a PrimaryHDU
-    R_combined_fits = fits.PrimaryHDU(R_combined_cutout.data, fits.Header())
-    for i, filename in enumerate(filelist_light_reduced_R):
-        R_combined_fits.header["FRAME_" + str(i)] = filename
-    R_combined_fits.header.update(R_combined_cutout.wcs.to_header())
-    R_combined_fits.header["XPOSURE"] = np.sum(R_exp_time_list)
-    R_combined_fits.writeto(
-        os.path.join(folder_i, "R_{}_nightly_stack.fits".format(folder_i)),
-        overwrite=True,
-    )
+    if len(R_combiner_list) > 0:
+        R_combiner = Combiner(R_combiner_list, dtype=np.float64)
+        R_combiner.weights = np.array(R_exp_time_list)
+        R_combiner.sigma_clipping()
+        R_combined_data = R_combiner.average_combine()
+        # put the cutout into a PrimaryHDU
+        R_combined_fits = fits.PrimaryHDU(R_combined_data.data, fits.Header())
+        for i, filename in enumerate(filelist_light_reduced_wcs_fitted_reprojected_R):
+            R_combined_fits.header["FRAME_" + str(i)] = filename
+        R_combined_fits.header["XPOSURE"] = np.sum(R_exp_time_list)
+        R_combined_fits.writeto(
+            os.path.join(folder_i, "R_{}_nightly_stack.fits".format(folder_i[:-3])),
+            overwrite=True,
+        )
 
     # Ha band
     for filename in filelist_light_reduced_wcs_fitted_reprojected_Ha:
@@ -186,25 +160,17 @@ for folder_i in folder_name:
         )
         Ha_exp_time_list.append(fits_file[0].header["EXPTIME"])
 
-    Ha_combiner = Combiner(Ha_combiner_list, dtype=np.float64)
-    Ha_combiner.weights = np.array(Ha_exp_time_list)
-    Ha_combiner.sigma_clipping()
-    Ha_combined_data = Ha_combiner.average_combine()
-    # make the cutout to 30 arcmin by 30 arcmin
-    Ha_combined_cutout = Cutout2D(
-        Ha_combined_data.data,
-        ups_sgr_coord,
-        30.0 * units.arcmin,
-        wcs=wcs_reference,
-        mode="partial",
-    )
-    # put the cutout into a PrimaryHDU
-    Ha_combined_fits = fits.PrimaryHDU(Ha_combined_cutout.data, fits.Header())
-    for i, filename in enumerate(filelist_light_reduced_Ha):
-        Ha_combined_fits.header["FRAME_" + str(i)] = filename
-    Ha_combined_fits.header.update(Ha_combined_cutout.wcs.to_header())
-    Ha_combined_fits.header["XPOSURE"] = np.sum(Ha_exp_time_list)
-    Ha_combined_fits.writeto(
-        os.path.join(folder_i, "Ha_{}_nightly_stack.fits".format(folder_i)),
-        overwrite=True,
-    )
+    if len(Ha_combiner_list) > 0:
+        Ha_combiner = Combiner(Ha_combiner_list, dtype=np.float64)
+        Ha_combiner.weights = np.array(Ha_exp_time_list)
+        Ha_combiner.sigma_clipping()
+        Ha_combined_data = Ha_combiner.average_combine()
+        # put the cutout into a PrimaryHDU
+        Ha_combined_fits = fits.PrimaryHDU(Ha_combined_data.data, fits.Header())
+        for i, filename in enumerate(filelist_light_reduced_wcs_fitted_reprojected_Ha):
+            Ha_combined_fits.header["FRAME_" + str(i)] = filename
+        Ha_combined_fits.header["XPOSURE"] = np.sum(Ha_exp_time_list)
+        Ha_combined_fits.writeto(
+            os.path.join(folder_i, "Ha_{}_nightly_stack.fits".format(folder_i[:-3])),
+            overwrite=True,
+        )

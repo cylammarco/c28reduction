@@ -106,7 +106,7 @@ for folder_i in folder_name:
             B_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
         B_combiner = Combiner(B_nightly_combiner_list, dtype=np.float64)
-        B_combiner.weights = np.array(B_exp_time_list)
+        B_combiner.weights = np.array(B_nightly_exp_time_list)
         B_combiner.sigma_clipping()
         B_combined_data = B_combiner.average_combine()
 
@@ -142,7 +142,7 @@ for folder_i in folder_name:
             V_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
         V_combiner = Combiner(V_nightly_combiner_list, dtype=np.float64)
-        V_combiner.weights = np.array(V_exp_time_list)
+        V_combiner.weights = np.array(V_nightly_exp_time_list)
         V_combiner.sigma_clipping()
         V_combined_data = B_combiner.average_combine()
 
@@ -178,7 +178,7 @@ for folder_i in folder_name:
             R_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
         R_combiner = Combiner(R_nightly_combiner_list, dtype=np.float64)
-        R_combiner.weights = np.array(R_exp_time_list)
+        R_combiner.weights = np.array(R_nightly_exp_time_list)
         R_combiner.sigma_clipping()
         R_combined_data = R_combiner.average_combine()
 
@@ -193,7 +193,7 @@ for folder_i in folder_name:
         )
 
     # Ha band
-    if filepathlist_nightly_stack_V == []:
+    if filepathlist_nightly_stack_Ha == []:
 
         print("There is not any nightly stack in the Ha filter.")
 
@@ -214,7 +214,7 @@ for folder_i in folder_name:
             Ha_nightly_exp_time_list.append(float(fits_file[0].header["XPOSURE"]))
 
         Ha_combiner = Combiner(Ha_nightly_combiner_list, dtype=np.float64)
-        Ha_combiner.weights = np.array(Ha_exp_time_list)
+        Ha_combiner.weights = np.array(Ha_nightly_exp_time_list)
         Ha_combiner.sigma_clipping()
         Ha_combined_data = Ha_combiner.average_combine()
 
