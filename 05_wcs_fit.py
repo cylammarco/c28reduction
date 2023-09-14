@@ -43,10 +43,9 @@ def wcs_fit(folder, filelist):
         # WCS fit
         filepath = os.path.join(folder, filename)
         subprocess.call(
-            "solve-field {} --ra='19:21:43.6' --dec='-15:57:18' --radius=2.0 --downsample=2 --scale-low=0.825 --scale-high=0.845 --scale-units='arcsecperpix' --depth=150 --resort --cpulimit 30000 --overwrite --config /home/wli/astrometry/astrometry.cfg".format(
-                filepath
-            ),
-            shell=True,
+            "bash -c \"/home/mlam/bin/python-3.10.4/bin/solve-field {} --ra='19:21:43.6' --dec='-15:57:18' --radius=2.0 --downsample=2 --scale-low=0.825 --scale-high=0.845 --scale-units='arcsecperpix' --depth=150 --resort --cpulimit 30000 --overwrite --config /home/wli/astrometry/astrometry.cfg\"".format(
+                filepath),
+            shell=True
         )
         obs_time[i] = float(fits.open(filepath, memmap=False)[0].header["JD"])
 
@@ -86,7 +85,7 @@ for folder_i in folder_name:
     (filelist_light_reduced_B, filelist_light_reduced_V, filelist_light_reduced_R,
         filelist_light_reduced_Ha) = filelist_light_reduced_all
     # Do WCS fit on all of the light frames
-    wcs_fit(folder_i, filelist_light_reduced_B)
-    wcs_fit(folder_i, filelist_light_reduced_V)
-    wcs_fit(folder_i, filelist_light_reduced_R)
+    #wcs_fit(folder_i, filelist_light_reduced_B)
+    #wcs_fit(folder_i, filelist_light_reduced_V)
+    #wcs_fit(folder_i, filelist_light_reduced_R)
     wcs_fit(folder_i, filelist_light_reduced_Ha)
